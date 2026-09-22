@@ -53,5 +53,6 @@ export interface AllData {
   user?: HomeData;
   about?: AboutData;
   contact?: ContactData;
-  projects?: ProjectData[];
+  projects?: ProjectData;
+  imprint?: ImprintData;
 }

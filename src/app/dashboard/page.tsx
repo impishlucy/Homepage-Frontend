@@ -1,113 +1,209 @@
 "use client";
 
-import { useState, useEffect, JSX } from "react";
-import type { AllData } from "@/lib/types";
-import { Card, CardContent } from "@/components/ui/card"
-import Image from "next/image";
-import { SVGProps } from 'react';
+import { useState, useEffect } from "react";
+import type { AllData, Project, ImprintData } from "@/lib/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button"
-import { toast } from "@/components/ui/toast"
+import { Loader2, Plus, Trash2, X } from "lucide-react";
 
-// Using https://logos.lndev.me/ Expand / Edit this to your needs.
+type SaveSection = "home" | "about" | "contact" | "imprint" | "projects";
 
-export function CSharpIcon(props: SVGProps<SVGSVGElement>) {
+const inputCls = "w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+
+function Field({ label, value, onChange, multiline = false }: {
+  label: string;
+  value: string | number | undefined;
+  onChange: (v: string) => void;
+  multiline?: boolean;
+}) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 285" {...props}>
-      <defs>
-        <linearGradient id="SVGfnwjfeci" x1="17.42%" x2="56.516%" y1="21.86%" y2="97.437%">
-          <stop offset="0%" stopColor="#927be5" />
-          <stop offset="100%" stopColor="#512bd4" />
-        </linearGradient>
-      </defs>
-      <path fill="url(#SVGfnwjfeci)" d="M0 89.355v105.576c0 13.06 6.967 25.14 18.286 31.666l91.429 52.794a36.56 36.56 0 0 0 36.571 0l91.429-52.794A36.56 36.56 0 0 0 256 194.93V89.356a36.56 36.56 0 0 0-18.285-31.672l-91.43-52.78a36.55 36.55 0 0 0-36.57 0l-91.43 52.78A36.57 36.57 0 0 0 0 89.356" />
-      <path fill="#fff" d="M64.003 123.872v36.575a9.13 9.13 0 0 0 9.145 9.145a9.14 9.14 0 0 0 9.145-9.145a9.142 9.142 0 1 1 18.285 0c0 15.149-12.28 27.43-27.43 27.43s-27.43-12.281-27.43-27.43v-36.57c0-15.15 12.28-27.43 27.43-27.43s27.43 12.28 27.43 27.43a9.142 9.142 0 0 1-18.285 0a9.142 9.142 0 1 0-18.285 0zm146.29 36.575a9.134 9.134 0 0 1-9.146 9.145h-9.145v9.14c0 2.427-.96 4.753-2.678 6.466a9.124 9.124 0 0 1-12.928 0a9.17 9.17 0 0 1-2.679-6.467v-9.14h-18.284v9.14a9.124 9.124 0 0 1-9.146 9.146a9.124 9.124 0 0 1-9.14-9.146v-9.14h-9.15a9.142 9.142 0 0 1 0-18.284h9.145v-18.285h-9.145a9.142 9.142 0 0 1 0-18.285h9.145v-9.145a9.142 9.142 0 0 1 18.285 0v9.14h18.285v-9.14a9.142 9.142 0 0 1 18.285 0v9.14h9.145a9.12 9.12 0 0 1 6.461 2.678a9.124 9.124 0 0 1 0 12.928a9.13 9.13 0 0 1-6.46 2.684h-9.146v18.285h9.145a9.166 9.166 0 0 1 9.145 9.14zm-36.576-27.425h-18.284v18.285h18.284z" />
-    </svg>
+    <label className="block text-left space-y-1">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      {multiline ? (
+        <textarea className={`${inputCls} min-h-[90px] resize-y`} value={value ?? ""} onChange={(e) => onChange(e.target.value)} />
+      ) : (
+        <input className={inputCls} value={value ?? ""} onChange={(e) => onChange(e.target.value)} />
+      )}
+    </label>
   );
 }
 
-export function TypescriptIcon(props: SVGProps<SVGSVGElement>) {
+function SaveButton({ saving, section, onClick }: {
+  saving: SaveSection | null;
+  section: SaveSection;
+  onClick: () => void;
+}) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" {...props}>
-      <path fill="#3178c6" d="M20 0h216c11.046 0 20 8.954 20 20v216c0 11.046-8.954 20-20 20H20c-11.046 0-20-8.954-20-20V20C0 8.954 8.954 0 20 0" />
-      <path fill="#fff" d="M150.518 200.475v27.62q6.738 3.453 15.938 5.179T185.849 235q9.934 0 18.874-1.899t15.678-6.257q6.738-4.359 10.669-11.394q3.93-7.033 3.93-17.391q0-7.51-2.246-13.163a30.8 30.8 0 0 0-6.479-10.055q-4.232-4.402-10.149-7.898t-13.347-6.602q-5.442-2.245-9.761-4.359t-7.342-4.316q-3.024-2.2-4.665-4.661t-1.641-5.567q0-2.848 1.468-5.135q1.469-2.288 4.147-3.927t6.565-2.547q3.887-.906 8.638-.906q3.456 0 7.299.518q3.844.517 7.732 1.597a54 54 0 0 1 7.558 2.719a41.7 41.7 0 0 1 6.781 3.797v-25.807q-6.306-2.417-13.778-3.582T198.633 107q-9.847 0-18.658 2.115q-8.811 2.114-15.506 6.602q-6.694 4.49-10.582 11.437Q150 134.102 150 143.769q0 12.342 7.127 21.06t21.638 14.759a292 292 0 0 1 10.625 4.575q4.924 2.244 8.509 4.66t5.658 5.265t2.073 6.474a9.9 9.9 0 0 1-1.296 4.963q-1.295 2.287-3.93 3.97t-6.565 2.632t-9.2.95q-8.983 0-17.794-3.151t-16.327-9.451m-46.036-68.733H140V109H41v22.742h35.345V233h28.137z" />
-    </svg>
+    <Button size="sm" onClick={onClick} disabled={saving !== null}>
+      {saving === section ? <Loader2 className="h-4 w-4 animate-spin" /> : `Save ${section}`}
+    </Button>
   );
-}
-
-export function HtmlIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="74.6 0 362.8 512" {...props}>
-      <path d="M108.4 0h23v22.8h21.2V0h23v69h-23V46h-21v23h-23.2M206 23h-20.3V0h63.7v23H229v46h-23m53.5-69h24.1l14.8 24.3L313.2 0h24.1v69h-23V34.8l-16.1 24.8-16.1-24.8V69h-22.6m89.2-69h23v46.2h32.6V69h-55.6" />
-      <path fill="#e44d26" d="m107.6 471-33-370.4h362.8l-33 370.2L255.7 512" />
-      <path fill="#f16529" d="M256 480.5V131h148.3L376 447" />
-      <path fill="#ebebeb" d="M142 176.3h114v45.4h-64.2l4.2 46.5h60v45.3H154.4m2 22.8H202l3.2 36.3 50.8 13.6v47.4l-93.2-26" />
-      <path fill="#fff" d="M369.6 176.3H255.8v45.4h109.6m-4.1 46.5H255.8v45.4h56l-5.3 59-50.7 13.6v47.2l93-25.8" />
-    </svg>
-  );
-}
-
-export function UnityIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 263" {...props}>
-      <path fill="#FFF1F2FF" d="m166.872 131.237l45.91-79.275l22.184 79.275l-22.185 79.256zm-22.376 12.874l45.916 79.262l-79.966-20.486l-57.77-58.776zm45.906-105.033l-45.906 79.275h-91.82l57.77-58.78zm65.539 65.18L227.933.06l-104.54 27.925l-15.475 27.207l-31.401-.225L0 131.244l76.517 76.259h.003l31.388-.232l15.497 27.207l104.528 27.92L255.94 158.22l-15.906-26.982z" />
-    </svg>
-  );
-}
-
-function GetIcon(name: string) {
-  switch (name.toLowerCase()) {
-    case "c#":
-    case "c-sharp":
-    case "csharp":
-      return CSharpIcon;
-    case "typescript":
-    case "ts":
-      return TypescriptIcon;
-    case "html":
-      return HtmlIcon;
-    case "unity":
-      return UnityIcon;
-    default:
-      return null;
-  }
 }
 
 export default function DashboardPage() {
   const router = useRouter();
   const [data, setData] = useState<AllData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [saving, setSaving] = useState<SaveSection | null>(null);
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [newProject, setNewProject] = useState({ title: "", description: "", imageUrl: "", projectUrl: "", technologies: "" });
+
+  const apiBaseUrl = `https://api.${typeof window !== "undefined" ? window.location.hostname : ""}`;
+
+  async function authFetch(url: string, options: RequestInit = {}) {
+    const token = localStorage.getItem("admin_jwt") ?? "";
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        ...(options.headers ?? {}),
+      },
+    });
+
+    const rotated = res.headers.get("X-New-Token");
+    if (rotated) localStorage.setItem("admin_jwt", rotated);
+
+    if (res.status === 401) {
+      localStorage.removeItem("admin_jwt");
+      router.replace("/login");
+      throw new Error("Unauthorized");
+    }
+    return res;
+  }
+
+  async function loadDashboard() {
+    const token = localStorage.getItem("admin_jwt");
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+    try {
+      const res = await authFetch(`${apiBaseUrl}/admin/dashboard`);
+      if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+      const json: AllData = await res.json();
+      setData(json);
+    } catch {
+      localStorage.removeItem("admin_jwt");
+      router.replace("/login");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function refresh() {
+    const res = await authFetch(`${apiBaseUrl}/admin/dashboard`);
+    if (!res.ok) throw new Error(`Refresh failed: ${res.status}`);
+    setData(await res.json());
+  }
+
+  async function save(section: SaveSection) {
+    if (!data) return;
+    setSaving(section);
+    try {
+      const body =
+        section === "home" ? data.user :
+          section === "about" ? data.about :
+            section === "contact" ? data.contact :
+              section === "imprint" ? data.imprint :
+                data.projects?.projects; // Send the array of projects to the backend
+
+      const res = await authFetch(`${apiBaseUrl}/admin/update/${section}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+      toast.add({ title: `${section.charAt(0).toUpperCase() + section.slice(1)} data saved` });
+    } catch {
+      toast.add({ title: `Failed to save ${section} data` });
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  async function addProject() {
+    try {
+      const res = await authFetch(`${apiBaseUrl}/admin/projects`, {
+        method: "POST",
+        body: JSON.stringify({
+          title: newProject.title,
+          description: newProject.description,
+          imageUrl: newProject.imageUrl,
+          projectUrl: newProject.projectUrl,
+          technologies: newProject.technologies.split(",").map((s) => s.trim()).filter(Boolean),
+        }),
+      });
+      if (!res.ok) throw new Error(`Create failed: ${res.status}`);
+      const created: Project = await res.json();
+
+      setData((d) => {
+        if (!d) return d;
+        const currentProjects = d.projects?.projects ?? [];
+        return {
+          ...d,
+          projects: {
+            projects: [created, ...currentProjects]
+          }
+        };
+      });
+
+      setNewProject({ title: "", description: "", imageUrl: "", projectUrl: "", technologies: "" });
+      setShowNewProject(false);
+      toast.add({ title: "Project created" });
+    } catch {
+      toast.add({ title: "Failed to create project" });
+    }
+  }
+
+  async function deleteProject(id: string) {
+    try {
+      const res = await authFetch(`${apiBaseUrl}/admin/projects/${encodeURIComponent(id)}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+      await refresh();
+      toast.add({ title: "Project deleted" });
+    } catch {
+      toast.add({ title: "Failed to delete project" });
+    }
+  }
+
+  function patchHome(patch: Partial<NonNullable<AllData["user"]>>) {
+    setData((d) => (d ? { ...d, user: { ...(d.user ?? {}), ...patch } } : d));
+  }
+
+  function patchAbout(patch: Partial<NonNullable<AllData["about"]>>) {
+    setData((d) => (d ? { ...d, about: { ...(d.about ?? {}), ...patch } } : d));
+  }
+
+  function patchContact(patch: Partial<NonNullable<AllData["contact"]>>) {
+    setData((d) => (d ? { ...d, contact: { ...(d.contact ?? {}), ...patch } } : d));
+  }
+
+  function patchImprint(patch: Partial<ImprintData>) {
+    setData((d) => {
+      if (!d) return d;
+      // Ensure all required string fields exist to satisfy the strict ImprintData interface
+      const current: ImprintData = d.imprint ?? { name: "", email: "", phone: "", address: "" };
+      return { ...d, imprint: { ...current, ...patch } as ImprintData };
+    });
+  }
+
+  function patchProject(id: string, patch: Partial<Project>) {
+    setData((d) => {
+      if (!d || !d.projects) return d;
+      return {
+        ...d,
+        projects: {
+          projects: d.projects.projects.map((p) => (p.id === id ? { ...p, ...patch } : p))
+        }
+      };
+    });
+  }
 
   useEffect(() => {
-    async function fetchData() {
-      const token = localStorage.getItem("admin_jwt");
-      if (token == ""){
-        router.replace("/login");
-      }
-
-      try {
-        const hostname = window.location.hostname;
-        const baseUrl = `https://api.${hostname}`;
-        const res = await fetch(`${baseUrl}/admin/dashboard`, {
-          method: "GET",
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-
-        if (!res.ok) {
-          throw new Error(`Failed to fetch: ${res.status}`);
-        }
-
-        const jsonData = await res.json();
-        setData(jsonData);
-      } catch {
-        localStorage.removeItem("admin_jwt");
-        router.replace("/login");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchData();
+    void Promise.resolve().then(() => loadDashboard());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (isLoading) {
@@ -117,11 +213,131 @@ export default function DashboardPage() {
     );
   }
 
-  return (
-    <div className="flex flex-col items-center text-center space-y-8 w-full py-8">
-      <div className="space-y-6 max-w-2xl px-4 w-full">
+  if (!data) return <></>;
 
+  return (
+    <div className="w-full max-w-6xl mx-auto px-4 py-8 space-y-6">
+      <h1 className="text-3xl font-bold tracking-tight text-foreground text-center">Admin Dashboard</h1>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="bg-card/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className="text-lg">Home Data</CardTitle>
+            <SaveButton saving={saving} section="home" onClick={() => save("home")} />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Field label="User" value={data.user?.user ?? ""} onChange={(v) => patchHome({ user: v })} />
+            <Field label="Blurp" multiline value={data.user?.blurp ?? ""} onChange={(v) => patchHome({ blurp: v })} />
+            <Field label="Avatar URL" value={data.user?.avatar ?? ""} onChange={(v) => patchHome({ avatar: v })} />
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className="text-lg">Contact Data</CardTitle>
+            <SaveButton saving={saving} section="contact" onClick={() => save("contact")} />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Field label="Email" value={data.contact?.email ?? ""} onChange={(v) => patchContact({ email: v })} />
+            <Field label="Phone" value={data.contact?.phone ?? ""} onChange={(v) => patchContact({ phone: v })} />
+            <Field label="Discord" value={data.contact?.discord ?? ""} onChange={(v) => patchContact({ discord: v })} />
+            <Field label="Twitter" value={data.contact?.twitter ?? ""} onChange={(v) => patchContact({ twitter: v })} />
+            <Field label="Linkedin" value={data.contact?.linkedin ?? ""} onChange={(v) => patchContact({ linkedin: v })} />
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className="text-lg">Imprint Data</CardTitle>
+            <SaveButton saving={saving} section="imprint" onClick={() => save("imprint")} />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Field label="Name" value={data.imprint?.name ?? ""} onChange={(v) => patchImprint({ name: v })} />
+            <Field label="Email" value={data.imprint?.email ?? ""} onChange={(v) => patchImprint({ email: v })} />
+            <Field label="Phone" value={data.imprint?.phone ?? ""} onChange={(v) => patchImprint({ phone: v })} />
+            <Field label="Address (use <br> for line breaks)" multiline value={data.imprint?.address ?? ""} onChange={(v) => patchImprint({ address: v })} />
+          </CardContent>
+        </Card>
       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="bg-card/50">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className="text-lg">About Data</CardTitle>
+            <SaveButton saving={saving} section="about" onClick={() => save("about")} />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Field label="Full Name" value={data.about?.fullName ?? ""} onChange={(v) => patchAbout({ fullName: v })} />
+            <label className="block text-left space-y-1">
+              <span className="text-xs font-medium text-muted-foreground">Age</span>
+              <input
+                type="number"
+                className={inputCls}
+                value={data.about?.age ?? ""}
+                onChange={(e) => patchAbout({ age: e.target.value === "" ? undefined : Number(e.target.value) })}
+              />
+            </label>
+            <Field label="Pronouns" value={data.about?.pronouns ?? ""} onChange={(v) => patchAbout({ pronouns: v })} />
+            <Field label="Bio" multiline value={data.about?.bio ?? ""} onChange={(v) => patchAbout({ bio: v })} />
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card/50 lg:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className="text-lg">Projects</CardTitle>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setShowNewProject(true)}>
+                <Plus className="h-4 w-4 mr-1" /> Add
+              </Button>
+              <SaveButton saving={saving} section="projects" onClick={() => save("projects")} />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {(data.projects?.projects ?? []).map((p) => (
+              <div key={p.id} className="rounded-md border border-border bg-background/40 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono text-muted-foreground">#{p.id}</span>
+                  <Button size="sm" variant="destructive" onClick={() => deleteProject(p.id)}>
+                    <Trash2 className="h-4 w-4 mr-1" /> Delete
+                  </Button>
+                </div>
+                <Field label="Title" value={p.title ?? ""} onChange={(v) => patchProject(p.id, { title: v })} />
+                <Field label="Description" multiline value={p.description ?? ""} onChange={(v) => patchProject(p.id, { description: v })} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="Image URL" value={p.imageUrl ?? ""} onChange={(v) => patchProject(p.id, { imageUrl: v })} />
+                  <Field label="Project URL" value={p.projectUrl ?? ""} onChange={(v) => patchProject(p.id, { projectUrl: v })} />
+                </div>
+                <Field
+                  label="Technologies (comma separated)"
+                  value={(p.technologies ?? []).join(", ")}
+                  onChange={(v) => patchProject(p.id, { technologies: v.split(",").map((s) => s.trim()).filter(Boolean) })}
+                />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      {showNewProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-lg border border-border bg-background p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-foreground">New Project</h2>
+              <Button size="sm" variant="ghost" onClick={() => setShowNewProject(false)}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <Field label="Title" value={newProject.title} onChange={(v) => setNewProject((n) => ({ ...n, title: v }))} />
+            <Field label="Description" multiline value={newProject.description} onChange={(v) => setNewProject((n) => ({ ...n, description: v }))} />
+            <Field label="Image URL" value={newProject.imageUrl} onChange={(v) => setNewProject((n) => ({ ...n, imageUrl: v }))} />
+            <Field label="Project URL" value={newProject.projectUrl} onChange={(v) => setNewProject((n) => ({ ...n, projectUrl: v }))} />
+            <Field label="Technologies (comma separated)" value={newProject.technologies} onChange={(v) => setNewProject((n) => ({ ...n, technologies: v }))} />
+            <Button className="w-full" onClick={addProject}>
+              <Plus className="h-4 w-4 mr-1" /> Create Project
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
