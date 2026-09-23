@@ -77,15 +77,16 @@ export default function AboutPage(): JSX.Element {
   useEffect(() => {
     async function fetchData() {
       try {
-        const hostname = window.location.hostname;
-        const baseUrl = `https://api.${hostname}`;
-        const res = await fetch(`${baseUrl}/data/about`);
+        const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+        const apiBaseUrl = `https://api.${hostname}`;
+        const res = await fetch(`${apiBaseUrl}/data/about`);
 
         if (!res.ok) {
           throw new Error(`Failed to fetch: ${res.status}`);
         }
 
-        const jsonData = await res.json();
+        const text = await res.json();
+        const jsonData = text ? text : null;
         setData(jsonData);
       } catch (error) {
         console.error("Error fetching home data:", error);

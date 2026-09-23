@@ -50,7 +50,8 @@ export default function DashboardPage() {
   const [showNewProject, setShowNewProject] = useState(false);
   const [newProject, setNewProject] = useState({ title: "", description: "", imageUrl: "", projectUrl: "", technologies: "" });
 
-  const apiBaseUrl = `https://api.${typeof window !== "undefined" ? window.location.hostname : ""}`;
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const apiBaseUrl = `https://api.${hostname}`;
 
   async function authFetch(url: string, options: RequestInit = {}) {
     const token = localStorage.getItem("admin_jwt") ?? "";
@@ -83,8 +84,9 @@ export default function DashboardPage() {
     try {
       const res = await authFetch(`${apiBaseUrl}/admin/dashboard`);
       if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
-      const json: AllData = await res.json();
-      setData(json);
+      const text = await res.json();
+      const jsonData = text ? text : null;
+      setData(jsonData);
     } catch {
       localStorage.removeItem("admin_jwt");
       router.replace("/login");
@@ -96,7 +98,9 @@ export default function DashboardPage() {
   async function refresh() {
     const res = await authFetch(`${apiBaseUrl}/admin/dashboard`);
     if (!res.ok) throw new Error(`Refresh failed: ${res.status}`);
-    setData(await res.json());
+    const text = await res.json();
+    const jsonData = text ? JSON.parse(text) : null;
+    setData(jsonData);
   }
 
   async function save(section: SaveSection) {

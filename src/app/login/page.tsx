@@ -9,7 +9,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  const hostname = window.location.hostname;
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
   const apiBaseUrl = `https://api.${hostname}`;
 
   async function verifyToken(token: string): Promise<boolean> {

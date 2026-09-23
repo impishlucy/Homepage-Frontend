@@ -11,15 +11,16 @@ export default function ImprintPage(): JSX.Element {
   useEffect(() => {
     async function fetchData() {
       try {
-        const hostname = window.location.hostname;
-        const baseUrl = `https://api.${hostname}`;
-        const res = await fetch(`${baseUrl}/data/imprint`);
+        const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+        const apiBaseUrl = `https://api.${hostname}`;
+        const res = await fetch(`${apiBaseUrl}/data/imprint`);
 
         if (!res.ok) {
           throw new Error(`Failed to fetch: ${res.status}`);
         }
 
-        const jsonData = await res.json();
+        const text = await res.json();
+        const jsonData = text ? text : null;
         setData(jsonData);
       } catch (error) {
         console.error("Error fetching imprint data:", error);
@@ -55,14 +56,15 @@ export default function ImprintPage(): JSX.Element {
                 <p className="font-medium">{data?.name ?? "API error"}</p>
 
                 <p>
-                  <span dangerouslySetInnerHTML={{ __html: data?.address ?? "API error" }} />
+                  <span dangerouslySetInnerHTML={{ __html: data?.address ?? "" }} />
                 </p>
 
+
                 <p>
-                  <span className="font-medium">Phone:</span> {data?.phone ?? "API error"}
+                  <span className="font-medium">Phone:</span> {data?.phone ?? ""}
                 </p>
                 <p>
-                  <span className="font-medium">Email:</span> {data?.email ?? "API error"}
+                  <span className="font-medium">Email:</span> {data?.email ?? ""}
                 </p>
               </div>
             </section>

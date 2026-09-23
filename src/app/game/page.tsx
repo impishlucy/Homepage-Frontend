@@ -14,6 +14,7 @@ export default function Game() {
     const hasTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
     const isSupported = hasMouse && hasHover && !hasTouch;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsSupportedDevice(isSupported);
 
     // Only check game availability if device is supported

@@ -13,18 +13,17 @@ export default function Page() {
   useEffect(() => {
     async function fetchData() {
       try {
-        // Dynamically determine the base URL based on the current domain
-        const hostname = window.location.hostname;
+        const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+        const apiBaseUrl = `https://api.${hostname}`;
 
-        const baseUrl = `https://api.${hostname}`;
-
-        const res = await fetch(`${baseUrl}/data/home`);
+        const res = await fetch(`${apiBaseUrl}/data/home`);
 
         if (!res.ok) {
           throw new Error(`Failed to fetch: ${res.status}`);
         }
 
-        const jsonData = await res.json();
+        const text = await res.json();
+        const jsonData = text ? text : null;
         setData(jsonData);
       } catch (error) {
         console.error("Error fetching home data:", error);

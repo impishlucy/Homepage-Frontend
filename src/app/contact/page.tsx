@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/toast"
 
 function CopyToClipboard(text: string) {
-  if (!text) return; // Prevent copying empty/undefined values
+  if (!text) return;
 
   navigator.clipboard.writeText(text).then(() => {
     toast.add({
@@ -29,15 +29,17 @@ export default function ContactPage(): JSX.Element {
   useEffect(() => {
     async function fetchData() {
       try {
-        const hostname = window.location.hostname;
-        const baseUrl = `https://api.${hostname}`;
-        const res = await fetch(`${baseUrl}/data/contact`);
+        const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+        const apiBaseUrl = `https://api.${hostname}`;
+
+        const res = await fetch(`${apiBaseUrl}/data/contact`);
 
         if (!res.ok) {
           throw new Error(`Failed to fetch: ${res.status}`);
         }
 
-        const jsonData = await res.json();
+        const text = await res.json();
+        const jsonData = text ? text : null;
         setData(jsonData);
       } catch (error) {
         console.error("Error fetching home data:", error);
@@ -67,8 +69,8 @@ export default function ContactPage(): JSX.Element {
         <div className="flex flex-row flex-wrap items-center justify-center gap-4">
           {data?.discord ? <Card>
             <CardContent>
-              <h2>Discord</h2>
-              <Button onClick={() => CopyToClipboard(data?.discord ?? "")}>
+              <h1 className="text-xl mb-2">Discord</h1>
+              <Button className="text-lg text-primary-foreground py-2 px-2" onClick={() => CopyToClipboard(data?.discord ?? "")}>
                 Copy Name
               </Button>
             </CardContent>
@@ -76,36 +78,44 @@ export default function ContactPage(): JSX.Element {
 
           {data?.email ? <Card>
             <CardContent>
-              <h2>Mail</h2>
-              <Button>
-                <Link href={data.email} />
+              <h1 className="text-xl mb-2">Mail</h1>
+              <Button className="text-lg text-primary-foreground py-2 px-2">
+                <a href={"mailto:" + data.email}>
+                  Send Mail
+                </a>
               </Button>
             </CardContent>
           </Card> : null}
 
           {data?.twitter ? <Card>
             <CardContent>
-              <h2>Mail</h2>
-              <Button>
-                <Link href={data.twitter} />
+              <h1 className="text-xl mb-2">X / Twitter</h1>
+              <Button className="text-lg text-primary-foreground py-2 px-2">
+                <a href={data.twitter} target="_blank" rel="noopener noreferrer">
+                  Open Link
+                </a>
               </Button>
             </CardContent>
           </Card> : null}
 
           {data?.phone ? <Card>
             <CardContent>
-              <h2>Mail</h2>
-              <Button>
-                <Link href={data.phone} />
+              <h1 className="text-xl mb-2">Phone</h1>
+              <Button className="text-lg text-primary-foreground py-2 px-2">
+                <a href={"tel:" + data.phone}>
+                  Call Me
+                </a>
               </Button>
             </CardContent>
           </Card> : null}
 
           {data?.linkedin ? <Card>
             <CardContent>
-              <h2>Mail</h2>
-              <Button>
-                <Link href={data.linkedin} />
+              <h1 className="text-xl mb-2">LinkedIn</h1>
+              <Button className="text-lg text-primary-foreground py-2 px-2">
+                <a href={data.linkedin} target="_blank" rel="noopener noreferrer">
+                  Open Link
+                </a>
               </Button>
             </CardContent>
           </Card> : null}
