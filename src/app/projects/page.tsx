@@ -171,40 +171,41 @@ export default function ProjectPage() {
           const projectUrl = project.projectUrl ?? "";
 
           return (
-            <Card key={index} className="w-full text-left bg-card/50">
-              <CardContent className="p-6 space-y-4">
-
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <Card key={index} className="w-full bg-card/50 text-left">
+              <CardContent className="space-y-4 p-6">
+                <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                   <h2 className="text-xl font-semibold text-foreground">
                     {title}
                   </h2>
 
                   <div className="flex flex-row flex-wrap items-center gap-2">
                     {project.technologies?.map((tech, techIndex) => {
-                      const IconComponent = GetIcon(tech);
-                      if (!IconComponent) return null;
+                      const IconComponent = GetIcon(tech)
+                      if (!IconComponent) return null
 
                       return (
                         <IconComponent
                           key={techIndex}
-                          className="h-5 w-5 text-foreground"
+                          className="h-6 w-6 text-foreground"
                         />
-                      );
+                      )
                     })}
                   </div>
                 </div>
 
-                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-                  <span dangerouslySetInnerHTML={{ __html: description ?? "" }} />
+                <p className="text-sm leading-relaxed whitespace-pre-line text-muted-foreground">
+                  <span
+                    dangerouslySetInnerHTML={{ __html: description ?? "" }}
+                  />
                 </p>
 
                 {imageUrl && (
-                  <div className="relative w-full aspect-video overflow-hidden rounded-md border bg-muted">
+                  <div className="relative aspect-video w-full overflow-hidden rounded-md border bg-muted">
                     <Image
                       src={imageUrl}
                       alt={title}
                       fill
-                      className="object-cover transition-transform hover:scale-105 duration-300"
+                      className="object-cover transition-transform duration-300 hover:scale-105"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     />
                   </div>
@@ -212,19 +213,18 @@ export default function ProjectPage() {
 
                 {projectUrl && (
                   <Link
-                  href={projectUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 w-full sm:w-auto"
+                    href={projectUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 sm:w-auto"
                   >
-                    View Project
-                    <Globe className="h-5 w-5" />
+                    <span>View Project</span>
+                    <Globe className="pl-1 h-5 w-5" />
                   </Link>
-                  )}
-
+                )}
               </CardContent>
             </Card>
-          );
+          )
         })}
 
       </div>
