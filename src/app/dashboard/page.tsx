@@ -1,91 +1,119 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import type { AllData, Project, ImprintData, Experience } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/toast";
-import { useRouter } from "next/navigation";
-import { Loader2, Plus, Trash2, X } from "lucide-react";
+import { useState, useEffect } from "react"
+import type { AllData, Project, ImprintData, Experience } from "@/lib/types"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { toast } from "@/components/ui/toast"
+import { useRouter } from "next/navigation"
+import { Loader2, Plus, Trash2, X } from "lucide-react"
 
-type SaveSection = "home" | "about" | "contact" | "imprint" | "projects";
+type SaveSection = "home" | "about" | "contact" | "imprint" | "projects"
 
-const inputCls = "w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+const inputCls =
+  "w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 
 // Strictly typed recursive cleaner
 function cleanPayload(obj: unknown): unknown {
-  if (obj === null || obj === undefined) return undefined;
-  if (typeof obj === "string") return obj === "" ? undefined : obj;
+  if (obj === null || obj === undefined) return undefined
+  if (typeof obj === "string") return obj === "" ? undefined : obj
 
   if (Array.isArray(obj)) {
     return obj.map((item) => {
       if (typeof item === "object" && item !== null && !Array.isArray(item)) {
-        const cleanedItem: Record<string, unknown> = {};
+        const cleanedItem: Record<string, unknown> = {}
         for (const key in item) {
-          const val = cleanPayload((item as Record<string, unknown>)[key]);
-          if (val !== undefined) cleanedItem[key] = val;
+          const val = cleanPayload((item as Record<string, unknown>)[key])
+          if (val !== undefined) cleanedItem[key] = val
         }
-        return cleanedItem;
+        return cleanedItem
       }
-      return cleanPayload(item);
-    });
+      return cleanPayload(item)
+    })
   }
 
   if (typeof obj === "object") {
-    const cleaned: Record<string, unknown> = {};
+    const cleaned: Record<string, unknown> = {}
     for (const key in obj) {
-      const val = cleanPayload((obj as Record<string, unknown>)[key]);
-      if (val !== undefined) cleaned[key] = val;
+      const val = cleanPayload((obj as Record<string, unknown>)[key])
+      if (val !== undefined) cleaned[key] = val
     }
-    return cleaned;
+    return cleaned
   }
 
-  return obj;
+  return obj
 }
 
-function Field({ label, value, onChange, multiline = false }: {
-  label: string;
-  value: string | number | undefined;
-  onChange: (v: string) => void;
-  multiline?: boolean;
+function Field({
+  label,
+  value,
+  onChange,
+  multiline = false,
+}: {
+  label: string
+  value: string | number | undefined
+  onChange: (v: string) => void
+  multiline?: boolean
 }) {
   return (
-    <label className="block text-left space-y-1">
+    <label className="block space-y-1 text-left">
       <span className="text-xs font-medium text-muted-foreground">{label}</span>
       {multiline ? (
-        <textarea className={`${inputCls} min-h-[90px] resize-y`} value={value ?? ""} onChange={(e) => onChange(e.target.value)} />
+        <textarea
+          className={`${inputCls} min-h-[90px] resize-y`}
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+        />
       ) : (
-        <input className={inputCls} value={value ?? ""} onChange={(e) => onChange(e.target.value)} />
+        <input
+          className={inputCls}
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+        />
       )}
     </label>
-  );
+  )
 }
 
-function SaveButton({ saving, section, onClick }: {
-  saving: SaveSection | null;
-  section: SaveSection;
-  onClick: () => void;
+function SaveButton({
+  saving,
+  section,
+  onClick,
+}: {
+  saving: SaveSection | null
+  section: SaveSection
+  onClick: () => void
 }) {
   return (
     <Button size="sm" onClick={onClick} disabled={saving !== null}>
-      {saving === section ? <Loader2 className="h-4 w-4 animate-spin" /> : `Save ${section}`}
+      {saving === section ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        `Save ${section}`
+      )}
     </Button>
-  );
+  )
 }
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const [data, setData] = useState<AllData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [saving, setSaving] = useState<SaveSection | null>(null);
-  const [showNewProject, setShowNewProject] = useState(false);
-  const [newProject, setNewProject] = useState({ title: "", description: "", imageUrl: "", projectUrl: "", technologies: "" });
+  const router = useRouter()
+  const [data, setData] = useState<AllData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [saving, setSaving] = useState<SaveSection | null>(null)
+  const [showNewProject, setShowNewProject] = useState(false)
+  const [newProject, setNewProject] = useState({
+    title: "",
+    description: "",
+    imageUrl: "",
+    projectUrl: "",
+    technologies: "",
+  })
 
-  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-  const apiBaseUrl = `https://api.${hostname}`;
+  const hostname = typeof window !== "undefined" ? window.location.hostname : ""
+  const apiBaseUrl = `https://api.${hostname}`
 
   async function authFetch(url: string, options: RequestInit = {}) {
-    const token = localStorage.getItem("admin_jwt") ?? "";
+    const token = localStorage.getItem("admin_jwt") ?? ""
     const res = await fetch(url, {
       ...options,
       headers: {
@@ -93,66 +121,74 @@ export default function DashboardPage() {
         Authorization: `Bearer ${token}`,
         ...(options.headers ?? {}),
       },
-    });
+    })
 
-    const rotated = res.headers.get("X-New-Token");
-    if (rotated) localStorage.setItem("admin_jwt", rotated);
+    const rotated = res.headers.get("X-New-Token")
+    if (rotated) localStorage.setItem("admin_jwt", rotated)
 
     if (res.status === 401) {
-      localStorage.removeItem("admin_jwt");
-      router.replace("/login");
-      throw new Error("Unauthorized");
+      localStorage.removeItem("admin_jwt")
+      router.replace("/login")
+      throw new Error("Unauthorized")
     }
-    return res;
+    return res
   }
 
   async function loadDashboard() {
-    const token = localStorage.getItem("admin_jwt");
+    const token = localStorage.getItem("admin_jwt")
     if (!token) {
-      router.replace("/login");
-      return;
+      router.replace("/login")
+      return
     }
     try {
-      const res = await authFetch(`${apiBaseUrl}/admin/dashboard`);
-      if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
-      const jsonData = await res.json();
-      setData(jsonData);
+      const res = await authFetch(`${apiBaseUrl}/admin/dashboard`)
+      if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`)
+      const jsonData = await res.json()
+      setData(jsonData)
     } catch {
-      localStorage.removeItem("admin_jwt");
-      router.replace("/login");
+      localStorage.removeItem("admin_jwt")
+      router.replace("/login")
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   }
 
   async function refresh() {
-    const res = await authFetch(`${apiBaseUrl}/admin/dashboard`);
-    if (!res.ok) throw new Error(`Refresh failed: ${res.status}`);
-    const jsonData = await res.json();
-    setData(jsonData);
+    const res = await authFetch(`${apiBaseUrl}/admin/dashboard`)
+    if (!res.ok) throw new Error(`Refresh failed: ${res.status}`)
+    const jsonData = await res.json()
+    setData(jsonData)
   }
 
   async function save(section: SaveSection) {
-    if (!data) return;
-    setSaving(section);
+    if (!data) return
+    setSaving(section)
     try {
       const body =
-        section === "home" ? data.user :
-          section === "about" ? data.about :
-            section === "contact" ? data.contact :
-              section === "imprint" ? data.imprint :
-                section === "projects" ? (data.projects ?? { projects: [] }) : null;
+        section === "home"
+          ? data.user
+          : section === "about"
+            ? data.about
+            : section === "contact"
+              ? data.contact
+              : section === "imprint"
+                ? data.imprint
+                : section === "projects"
+                  ? (data.projects ?? { projects: [] })
+                  : null
 
       const res = await authFetch(`${apiBaseUrl}/admin/update/${section}`, {
         method: "PUT",
         body: JSON.stringify(cleanPayload(body)),
-      });
-      if (!res.ok) throw new Error(`Save failed: ${res.status}`);
-      toast.add({ title: `${section.charAt(0).toUpperCase() + section.slice(1)} data saved` });
+      })
+      if (!res.ok) throw new Error(`Save failed: ${res.status}`)
+      toast.add({
+        title: `${section.charAt(0).toUpperCase() + section.slice(1)} data saved`,
+      })
     } catch {
-      toast.add({ title: `Failed to save ${section} data` });
+      toast.add({ title: `Failed to save ${section} data` })
     } finally {
-      setSaving(null);
+      setSaving(null)
     }
   }
 
@@ -164,193 +200,306 @@ export default function DashboardPage() {
         imageUrl: newProject.imageUrl,
         projectUrl: newProject.projectUrl,
         technologies: newProject.technologies.split(";").map((s) => s.trim()),
-      });
+      })
 
       const res = await authFetch(`${apiBaseUrl}/admin/projects`, {
         method: "POST",
         // CLEANED: Strips all empty strings before sending to backend
         body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error(`Create failed: ${res.status}`);
-      const created: Project = await res.json();
+      })
+      if (!res.ok) throw new Error(`Create failed: ${res.status}`)
+      const created: Project = await res.json()
 
       setData((d) => {
-        if (!d) return d;
-        const currentProjects = d.projects?.projects ?? [];
+        if (!d) return d
+        const currentProjects = d.projects?.projects ?? []
         return {
           ...d,
           projects: {
-            projects: [created, ...currentProjects]
-          }
-        };
-      });
+            projects: [created, ...currentProjects],
+          },
+        }
+      })
 
-      setNewProject({ title: "", description: "", imageUrl: "", projectUrl: "", technologies: "" });
-      setShowNewProject(false);
-      toast.add({ title: "Project created" });
+      setNewProject({
+        title: "",
+        description: "",
+        imageUrl: "",
+        projectUrl: "",
+        technologies: "",
+      })
+      setShowNewProject(false)
+      toast.add({ title: "Project created" })
     } catch {
-      toast.add({ title: "Failed to create project" });
+      toast.add({ title: "Failed to create project" })
     }
   }
 
   async function deleteProject(id: string) {
     try {
-      const res = await authFetch(`${apiBaseUrl}/admin/projects/${encodeURIComponent(id)}`, { method: "DELETE" });
-      if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
-      await refresh();
-      toast.add({ title: "Project deleted" });
+      const res = await authFetch(
+        `${apiBaseUrl}/admin/projects/${encodeURIComponent(id)}`,
+        { method: "DELETE" }
+      )
+      if (!res.ok) throw new Error(`Delete failed: ${res.status}`)
+      await refresh()
+      toast.add({ title: "Project deleted" })
     } catch {
-      toast.add({ title: "Failed to delete project" });
+      toast.add({ title: "Failed to delete project" })
     }
   }
 
   function patchHome(patch: Partial<NonNullable<AllData["user"]>>) {
-    setData((d) => (d ? { ...d, user: { ...(d.user ?? {}), ...patch } } : d));
+    setData((d) => (d ? { ...d, user: { ...(d.user ?? {}), ...patch } } : d))
   }
 
   function patchAbout(patch: Partial<NonNullable<AllData["about"]>>) {
-    setData((d) => (d ? { ...d, about: { ...(d.about ?? {}), ...patch } } : d));
+    setData((d) => (d ? { ...d, about: { ...(d.about ?? {}), ...patch } } : d))
   }
 
   function patchContact(patch: Partial<NonNullable<AllData["contact"]>>) {
-    setData((d) => (d ? { ...d, contact: { ...(d.contact ?? {}), ...patch } } : d));
+    setData((d) =>
+      d ? { ...d, contact: { ...(d.contact ?? {}), ...patch } } : d
+    )
   }
 
   function patchImprint(patch: Partial<ImprintData>) {
     setData((d) => {
-      if (!d) return d;
-      const current: ImprintData = d.imprint ?? { name: "", email: "", phone: "", address: "" };
-      return { ...d, imprint: { ...current, ...patch } as ImprintData };
-    });
+      if (!d) return d
+      const current: ImprintData = d.imprint ?? {
+        name: "",
+        email: "",
+        phone: "",
+        address: "",
+      }
+      return { ...d, imprint: { ...current, ...patch } as ImprintData }
+    })
   }
 
   function patchProject(id: string, patch: Partial<Project>) {
     setData((d) => {
-      if (!d || !d.projects) return d;
+      if (!d || !d.projects) return d
       return {
         ...d,
         projects: {
-          projects: d.projects.projects.map((p) => (p.id === id ? { ...p, ...patch } : p))
-        }
-      };
-    });
+          projects: d.projects.projects.map((p) =>
+            p.id === id ? { ...p, ...patch } : p
+          ),
+        },
+      }
+    })
   }
 
   function patchExperience(index: number, patch: Partial<Experience>) {
     setData((d) => {
-      if (!d || !d.about) return d;
-      const exps = [...(d.about.jobExperiences ?? [])];
-      exps[index] = { ...exps[index], ...patch };
-      return { ...d, about: { ...d.about, jobExperiences: exps } };
-    });
+      if (!d || !d.about) return d
+      const exps = [...(d.about.jobExperiences ?? [])]
+      exps[index] = { ...exps[index], ...patch }
+      return { ...d, about: { ...d.about, jobExperiences: exps } }
+    })
   }
 
   function addExperience() {
     setData((d) => {
-      if (!d) return d;
-      const currentAbout = d.about ?? {};
-      const exps = [...(currentAbout.jobExperiences ?? [])];
-      exps.push({});
+      if (!d) return d
+      const currentAbout = d.about ?? {}
+      const exps = [...(currentAbout.jobExperiences ?? [])]
+      exps.push({})
 
-      return { ...d, about: { ...currentAbout, jobExperiences: exps } };
-    });
+      return { ...d, about: { ...currentAbout, jobExperiences: exps } }
+    })
   }
 
   function deleteExperience(index: number) {
     setData((d) => {
-      if (!d || !d.about) return d;
-      const exps = [...(d.about.jobExperiences ?? [])];
-      exps.splice(index, 1);
-      return { ...d, about: { ...d.about, jobExperiences: exps } };
-    });
+      if (!d || !d.about) return d
+      const exps = [...(d.about.jobExperiences ?? [])]
+      exps.splice(index, 1)
+      return { ...d, about: { ...d.about, jobExperiences: exps } }
+    })
   }
 
   useEffect(() => {
-    void Promise.resolve().then(() => loadDashboard());
+    void Promise.resolve().then(() => loadDashboard())
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [])
 
   if (isLoading) {
-    return <></>;
+    return <></>
   }
 
-  if (!data) return <></>;
+  if (!data) return <></>
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-8 space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight text-foreground text-center">Admin Dashboard</h1>
+    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8">
+      <h1 className="text-center text-3xl font-bold tracking-tight text-foreground">
+        Admin Dashboard
+      </h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="bg-card/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle className="text-lg">Home Data</CardTitle>
-            <SaveButton saving={saving} section="home" onClick={() => save("home")} />
+            <SaveButton
+              saving={saving}
+              section="home"
+              onClick={() => save("home")}
+            />
           </CardHeader>
           <CardContent className="space-y-3">
-            <Field label="User" value={data.user?.user ?? ""} onChange={(v) => patchHome({ user: v })} />
-            <Field label="Blurp (use <br> for line breaks)" multiline value={data.user?.blurp ?? ""} onChange={(v) => patchHome({ blurp: v })} />
-            <Field label="Avatar URL" value={data.user?.avatar ?? ""} onChange={(v) => patchHome({ avatar: v })} />
+            <Field
+              label="User"
+              value={data.user?.user ?? ""}
+              onChange={(v) => patchHome({ user: v })}
+            />
+            <Field
+              label="Blurp (use <br> for line breaks)"
+              multiline
+              value={data.user?.blurp ?? ""}
+              onChange={(v) => patchHome({ blurp: v })}
+            />
+            <Field
+              label="Avatar URL"
+              value={data.user?.avatar ?? ""}
+              onChange={(v) => patchHome({ avatar: v })}
+            />
           </CardContent>
         </Card>
 
         <Card className="bg-card/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle className="text-lg">Contact Data</CardTitle>
-            <SaveButton saving={saving} section="contact" onClick={() => save("contact")} />
+            <SaveButton
+              saving={saving}
+              section="contact"
+              onClick={() => save("contact")}
+            />
           </CardHeader>
           <CardContent className="space-y-3">
-            <Field label="Email" value={data.contact?.email ?? ""} onChange={(v) => patchContact({ email: v })} />
-            <Field label="Phone" value={data.contact?.phone ?? ""} onChange={(v) => patchContact({ phone: v })} />
-            <Field label="Discord" value={data.contact?.discord ?? ""} onChange={(v) => patchContact({ discord: v })} />
-            <Field label="Twitter" value={data.contact?.twitter ?? ""} onChange={(v) => patchContact({ twitter: v })} />
-            <Field label="Linkedin" value={data.contact?.linkedin ?? ""} onChange={(v) => patchContact({ linkedin: v })} />
+            <Field
+              label="Email"
+              value={data.contact?.email ?? ""}
+              onChange={(v) => patchContact({ email: v })}
+            />
+            <Field
+              label="Phone"
+              value={data.contact?.phone ?? ""}
+              onChange={(v) => patchContact({ phone: v })}
+            />
+            <Field
+              label="Discord"
+              value={data.contact?.discord ?? ""}
+              onChange={(v) => patchContact({ discord: v })}
+            />
+            <Field
+              label="Twitter"
+              value={data.contact?.twitter ?? ""}
+              onChange={(v) => patchContact({ twitter: v })}
+            />
+            <Field
+              label="Linkedin"
+              value={data.contact?.linkedin ?? ""}
+              onChange={(v) => patchContact({ linkedin: v })}
+            />
           </CardContent>
         </Card>
 
         <Card className="bg-card/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle className="text-lg">Imprint Data</CardTitle>
-            <SaveButton saving={saving} section="imprint" onClick={() => save("imprint")} />
+            <SaveButton
+              saving={saving}
+              section="imprint"
+              onClick={() => save("imprint")}
+            />
           </CardHeader>
           <CardContent className="space-y-3">
-            <Field label="Name" value={data.imprint?.name ?? ""} onChange={(v) => patchImprint({ name: v })} />
-            <Field label="Email" value={data.imprint?.email ?? ""} onChange={(v) => patchImprint({ email: v })} />
-            <Field label="Phone" value={data.imprint?.phone ?? ""} onChange={(v) => patchImprint({ phone: v })} />
-            <Field label="Address (use <br> for line breaks)" multiline value={data.imprint?.address ?? ""} onChange={(v) => patchImprint({ address: v })} />
+            <Field
+              label="Name"
+              value={data.imprint?.name ?? ""}
+              onChange={(v) => patchImprint({ name: v })}
+            />
+            <Field
+              label="Email"
+              value={data.imprint?.email ?? ""}
+              onChange={(v) => patchImprint({ email: v })}
+            />
+            <Field
+              label="Phone"
+              value={data.imprint?.phone ?? ""}
+              onChange={(v) => patchImprint({ phone: v })}
+            />
+            <Field
+              label="Address (use <br> for line breaks)"
+              multiline
+              value={data.imprint?.address ?? ""}
+              onChange={(v) => patchImprint({ address: v })}
+            />
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="bg-card/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle className="text-lg">About Data</CardTitle>
-            <SaveButton saving={saving} section="about" onClick={() => save("about")} />
+            <SaveButton
+              saving={saving}
+              section="about"
+              onClick={() => save("about")}
+            />
           </CardHeader>
-          <CardContent className="space-y-3 max-h-[70vh] overflow-y-auto pr-2">
-            <Field label="Full Name" value={data.about?.fullName ?? ""} onChange={(v) => patchAbout({ fullName: v })} />
-            <label className="block text-left space-y-1">
-              <span className="text-xs font-medium text-muted-foreground">Age</span>
+          <CardContent className="max-h-[70vh] space-y-3 overflow-y-auto pr-2">
+            <Field
+              label="Full Name"
+              value={data.about?.fullName ?? ""}
+              onChange={(v) => patchAbout({ fullName: v })}
+            />
+            <label className="block space-y-1 text-left">
+              <span className="text-xs font-medium text-muted-foreground">
+                Age
+              </span>
               <input
                 type="number"
                 className={inputCls}
                 value={data.about?.age ?? ""}
-                onChange={(e) => patchAbout({ age: e.target.value === "" ? undefined : Number(e.target.value) })}
+                onChange={(e) =>
+                  patchAbout({
+                    age:
+                      e.target.value === ""
+                        ? undefined
+                        : Number(e.target.value),
+                  })
+                }
               />
             </label>
-            <Field label="Pronouns" value={data.about?.pronouns ?? ""} onChange={(v) => patchAbout({ pronouns: v })} />
-            <Field label="Bio (use <br> for line breaks)" multiline value={data.about?.bio ?? ""} onChange={(v) => patchAbout({ bio: v })} />
+            <Field
+              label="Pronouns"
+              value={data.about?.pronouns ?? ""}
+              onChange={(v) => patchAbout({ pronouns: v })}
+            />
+            <Field
+              label="Bio (use <br> for line breaks)"
+              multiline
+              value={data.about?.bio ?? ""}
+              onChange={(v) => patchAbout({ bio: v })}
+            />
 
-            <div className="pt-4 border-t border-border space-y-4">
+            <div className="space-y-4 border-t border-border pt-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-foreground">Job Experiences</span>
+                <span className="text-sm font-semibold text-foreground">
+                  Job Experiences
+                </span>
                 <Button size="sm" variant="outline" onClick={addExperience}>
-                  <Plus className="h-4 w-4 mr-1" /> Add
+                  <Plus className="mr-1 h-4 w-4" /> Add
                 </Button>
               </div>
 
               {(data.about?.jobExperiences ?? []).map((exp, idx) => (
-                <div key={idx} className="p-3 border border-border rounded-md bg-background/20 space-y-3 relative">
+                <div
+                  key={idx}
+                  className="relative space-y-3 rounded-md border border-border bg-background/20 p-3"
+                >
                   <Button
                     size="icon"
                     variant="ghost"
@@ -359,31 +508,66 @@ export default function DashboardPage() {
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pr-6">
-                    <Field label="Job Title" value={exp.jobTitle} onChange={(v) => patchExperience(idx, { jobTitle: v })} />
-                    <Field label="Company Name" value={exp.companyName} onChange={(v) => patchExperience(idx, { companyName: v })} />
-                    <Field label="Location" value={exp.jobLocation} onChange={(v) => patchExperience(idx, { jobLocation: v })} />
+                  <div className="grid grid-cols-1 gap-3 pr-6 sm:grid-cols-2">
+                    <Field
+                      label="Job Title"
+                      value={exp.jobTitle}
+                      onChange={(v) => patchExperience(idx, { jobTitle: v })}
+                    />
+                    <Field
+                      label="Company Name"
+                      value={exp.companyName}
+                      onChange={(v) => patchExperience(idx, { companyName: v })}
+                    />
+                    <Field
+                      label="Location"
+                      value={exp.jobLocation}
+                      onChange={(v) => patchExperience(idx, { jobLocation: v })}
+                    />
                     <div></div>
-                    <label className="block text-left space-y-1">
-                      <span className="text-xs font-medium text-muted-foreground">Start Date</span>
+                    <label className="block space-y-1 text-left">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        Start Date
+                      </span>
                       <input
                         type="date"
                         className={inputCls}
-                        value={exp.startDate ? exp.startDate.split('T')[0] : ""}
-                        onChange={(e) => patchExperience(idx, { startDate: e.target.value ? `${e.target.value}T00:00:00Z` : undefined })}
+                        value={exp.startDate ? exp.startDate.split("T")[0] : ""}
+                        onChange={(e) =>
+                          patchExperience(idx, {
+                            startDate: e.target.value
+                              ? `${e.target.value}T00:00:00Z`
+                              : undefined,
+                          })
+                        }
                       />
                     </label>
-                    <label className="block text-left space-y-1">
-                      <span className="text-xs font-medium text-muted-foreground">End Date</span>
+                    <label className="block space-y-1 text-left">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        End Date
+                      </span>
                       <input
                         type="date"
                         className={inputCls}
-                        value={exp.endDate ? exp.endDate.split('T')[0] : ""}
-                        onChange={(e) => patchExperience(idx, { endDate: e.target.value ? `${e.target.value}T00:00:00Z` : undefined })}
+                        value={exp.endDate ? exp.endDate.split("T")[0] : ""}
+                        onChange={(e) =>
+                          patchExperience(idx, {
+                            endDate: e.target.value
+                              ? `${e.target.value}T00:00:00Z`
+                              : undefined,
+                          })
+                        }
                       />
                     </label>
                   </div>
-                  <Field label="Description (use <br> for line breaks)" multiline value={exp.jobDescription} onChange={(v) => patchExperience(idx, { jobDescription: v })} />
+                  <Field
+                    label="Description (use <br> for line breaks)"
+                    multiline
+                    value={exp.jobDescription}
+                    onChange={(v) =>
+                      patchExperience(idx, { jobDescription: v })
+                    }
+                  />
                 </div>
               ))}
             </div>
@@ -394,31 +578,69 @@ export default function DashboardPage() {
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle className="text-lg">Projects</CardTitle>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => setShowNewProject(true)}>
-                <Plus className="h-4 w-4 mr-1" /> Add
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowNewProject(true)}
+              >
+                <Plus className="mr-1 h-4 w-4" /> Add
               </Button>
-              <SaveButton saving={saving} section="projects" onClick={() => save("projects")} />
+              <SaveButton
+                saving={saving}
+                section="projects"
+                onClick={() => save("projects")}
+              />
             </div>
           </CardHeader>
-          <CardContent className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+          <CardContent className="max-h-[70vh] space-y-4 overflow-y-auto pr-2">
             {(data.projects?.projects ?? []).map((p) => (
-              <div key={p.id} className="rounded-md border border-border bg-background/40 p-4 space-y-3">
+              <div
+                key={p.id}
+                className="space-y-3 rounded-md border border-border bg-background/40 p-4"
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono text-muted-foreground">#{p.id}</span>
-                  <Button size="sm" variant="destructive" onClick={() => deleteProject(p.id)}>
-                    <Trash2 className="h-4 w-4 mr-1" /> Delete
+                  <span className="font-mono text-xs text-muted-foreground">
+                    #{p.id}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => deleteProject(p.id)}
+                  >
+                    <Trash2 className="mr-1 h-4 w-4" /> Delete
                   </Button>
                 </div>
-                <Field label="Title" value={p.title ?? ""} onChange={(v) => patchProject(p.id, { title: v })} />
-                <Field label="Description (use <br> for line breaks)" multiline value={p.description ?? ""} onChange={(v) => patchProject(p.id, { description: v })} />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Field label="Image URL" value={p.imageUrl ?? ""} onChange={(v) => patchProject(p.id, { imageUrl: v })} />
-                  <Field label="Project URL" value={p.projectUrl ?? ""} onChange={(v) => patchProject(p.id, { projectUrl: v })} />
+                <Field
+                  label="Title"
+                  value={p.title ?? ""}
+                  onChange={(v) => patchProject(p.id, { title: v })}
+                />
+                <Field
+                  label="Description (use <br> for line breaks)"
+                  multiline
+                  value={p.description ?? ""}
+                  onChange={(v) => patchProject(p.id, { description: v })}
+                />
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Field
+                    label="Image URL"
+                    value={p.imageUrl ?? ""}
+                    onChange={(v) => patchProject(p.id, { imageUrl: v })}
+                  />
+                  <Field
+                    label="Project URL"
+                    value={p.projectUrl ?? ""}
+                    onChange={(v) => patchProject(p.id, { projectUrl: v })}
+                  />
                 </div>
                 <Field
                   label="Technologies (separated by ;)"
                   value={(p.technologies ?? []).join(";")}
-                  onChange={(v) => patchProject(p.id, { technologies: v.split(";").map((s) => s.trim()) })}
+                  onChange={(v) =>
+                    patchProject(p.id, {
+                      technologies: v.split(";").map((s) => s.trim()),
+                    })
+                  }
                 />
               </div>
             ))}
@@ -428,24 +650,53 @@ export default function DashboardPage() {
 
       {showNewProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-lg border border-border bg-background p-6 space-y-4">
+          <div className="w-full max-w-md space-y-4 rounded-lg border border-border bg-background p-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-foreground">New Project</h2>
-              <Button size="sm" variant="ghost" onClick={() => setShowNewProject(false)}>
+              <h2 className="text-lg font-semibold text-foreground">
+                New Project
+              </h2>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowNewProject(false)}
+              >
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <Field label="Title" value={newProject.title} onChange={(v) => setNewProject((n) => ({ ...n, title: v }))} />
-            <Field label="Description" multiline value={newProject.description} onChange={(v) => setNewProject((n) => ({ ...n, description: v }))} />
-            <Field label="Image URL" value={newProject.imageUrl} onChange={(v) => setNewProject((n) => ({ ...n, imageUrl: v }))} />
-            <Field label="Project URL" value={newProject.projectUrl} onChange={(v) => setNewProject((n) => ({ ...n, projectUrl: v }))} />
-            <Field label="Technologies (separated by ;)" value={newProject.technologies} onChange={(v) => setNewProject((n) => ({ ...n, technologies: v }))} />
+            <Field
+              label="Title"
+              value={newProject.title}
+              onChange={(v) => setNewProject((n) => ({ ...n, title: v }))}
+            />
+            <Field
+              label="Description"
+              multiline
+              value={newProject.description}
+              onChange={(v) => setNewProject((n) => ({ ...n, description: v }))}
+            />
+            <Field
+              label="Image URL"
+              value={newProject.imageUrl}
+              onChange={(v) => setNewProject((n) => ({ ...n, imageUrl: v }))}
+            />
+            <Field
+              label="Project URL"
+              value={newProject.projectUrl}
+              onChange={(v) => setNewProject((n) => ({ ...n, projectUrl: v }))}
+            />
+            <Field
+              label="Technologies (separated by ;)"
+              value={newProject.technologies}
+              onChange={(v) =>
+                setNewProject((n) => ({ ...n, technologies: v }))
+              }
+            />
             <Button className="w-full" onClick={addProject}>
-              <Plus className="h-4 w-4 mr-1" /> Create Project
+              <Plus className="mr-1 h-4 w-4" /> Create Project
             </Button>
           </div>
         </div>
       )}
     </div>
-  );
+  )
 }
