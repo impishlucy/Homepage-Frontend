@@ -54,6 +54,51 @@ export function UnityIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function NextjsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" {...props}>
+      <defs>
+        <linearGradient
+          id="SVGrDou6dwg"
+          x1="55.633%"
+          x2="83.228%"
+          y1="56.385%"
+          y2="96.08%"
+        >
+          <stop offset="0%" stopColor="#fff" />
+          <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient
+          id="SVG9onTObtB"
+          x1="50%"
+          x2="49.953%"
+          y1="0%"
+          y2="73.438%"
+        >
+          <stop offset="0%" stopColor="#fff" />
+          <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+        </linearGradient>
+        <circle id="SVGN5eQqeMK" cx="128" cy="128" r="128" />
+      </defs>
+      <mask id="SVGMX2wGdvm" fill="#fff">
+        <use href="#SVGN5eQqeMK" />
+      </mask>
+      <g mask="url(#SVGMX2wGdvm)">
+        <circle cx="128" cy="128" r="128" />
+        <path
+          fill="url(#SVGrDou6dwg)"
+          d="M212.634 224.028L98.335 76.8H76.8v102.357h17.228V98.68L199.11 234.446a128 128 0 0 0 13.524-10.418"
+        />
+        <path
+          fill="url(#SVG9onTObtB)"
+          d="M163.556 76.8h17.067v102.4h-17.067z"
+        />
+      </g>
+    </svg>
+  )
+}
+
+
 function GetIcon(name: string) {
   switch (name.toLowerCase()) {
     case "c#":
@@ -67,6 +112,10 @@ function GetIcon(name: string) {
       return HtmlIcon;
     case "unity":
       return UnityIcon;
+    case "next":
+    case "next.js":
+    case "nextjs":
+      return NextjsIcon;
     default:
       return null;
   }
@@ -115,28 +164,24 @@ export default function ProjectPage() {
           {data ? "My Projects" : "API ERROR"}
         </h1>
 
-        {data?.projects?.map((project, index) => {
-          // 1. Safe fallbacks to satisfy TypeScript and prevent crashes
+        {data?.projects?.slice().reverse().map((project, index) => {
           const title = project.title ?? "Untitled Project";
           const imageUrl = project.imageUrl ?? "";
           const description = project.description ?? "No description provided.";
-          const projectUrl = project.projectUrl ?? "#";
+          const projectUrl = project.projectUrl ?? "";
 
           return (
             <Card key={index} className="w-full text-left bg-card/50">
               <CardContent className="p-6 space-y-4">
 
-                {/* Row 1: Title and Tech Icons */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <h2 className="text-xl font-semibold text-foreground">
                     {title}
                   </h2>
 
-                  {/* Tech Icons Container */}
                   <div className="flex flex-row flex-wrap items-center gap-2">
                     {project.technologies?.map((tech, techIndex) => {
                       const IconComponent = GetIcon(tech);
-                      // Only render if the icon exists in our lookup table
                       if (!IconComponent) return null;
 
                       return (
@@ -149,13 +194,10 @@ export default function ProjectPage() {
                   </div>
                 </div>
 
-                {/* Row 2: Description */}
                 <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-                  {description}
+                  <span dangerouslySetInnerHTML={{ __html: description ?? "" }} />
                 </p>
 
-                {/* Row 3: Image */}
-                {/* We check if imageUrl is truthy to avoid rendering a broken image tag */}
                 {imageUrl && (
                   <div className="relative w-full aspect-video overflow-hidden rounded-md border bg-muted">
                     <Image
@@ -168,16 +210,17 @@ export default function ProjectPage() {
                   </div>
                 )}
 
-                {/* Row 4: Link Button (Opens in new window) */}
-                <Link
+                {projectUrl && (
+                  <Link
                   href={projectUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 w-full sm:w-auto"
-                >
-                  View Project
-                  <Globe className="h-5 w-5" />
-                </Link>
+                  >
+                    View Project
+                    <Globe className="h-5 w-5" />
+                  </Link>
+                  )}
 
               </CardContent>
             </Card>

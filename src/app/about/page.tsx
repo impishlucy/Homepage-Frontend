@@ -146,9 +146,9 @@ export default function AboutPage(): JSX.Element {
 
         </div>
 
-        <span className="text-lg text-foreground leading-relaxed">
-          {data?.bio || "API could not be reached."}
-        </span>
+        <p className="text-lg text-foreground leading-relaxed">
+          <span dangerouslySetInnerHTML={{ __html: data?.bio ?? "API could not be reached." }} />
+        </p>
 
         <Card className="bg-card/50 mt-6">
           <CardContent className="p-2 bg-transparent">
@@ -157,32 +157,27 @@ export default function AboutPage(): JSX.Element {
             <div className="space-y-2">
               {data?.jobExperiences?.map((exp, index) => (
                 <div key={index} className="relative">
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
+                  <div className="flex flex-col content-center justify-center gap-2 text-center">
 
-                    {/* Left Side: Role and Details */}
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-foreground">
-                        {exp.jobTitle || "Unknown Role"}
-                      </h3>
-                      <p className="text-base font-medium text-primary">
-                        {exp.companyName || "Unknown Company"}
-                        {exp.jobLocation && (
-                          <span className="text-muted-foreground font-normal">
-                    {" "}• {exp.jobLocation}
-                  </span>
-                        )}
-                      </p>
-                      {exp.jobDescription && (
-                        <p className="mt-2 text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-                          {exp.jobDescription}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Right Side: Dates */}
-                    <div className="text-sm font-medium text-muted-foreground whitespace-nowrap md:text-right mt-1 md:mt-0">
+                    <h3 className="text-lg font-semibold text-foreground">
+                      {exp.jobTitle || "Role"}
+                    </h3>
+                    <h4 className="text-md font-semibold text-primary">
                       {formatDate(exp.startDate)} – {exp.endDate ? formatDate(exp.endDate) : "Present"}
-                    </div>
+                    </h4>
+                    <p className="text-base font-medium text-normal">
+                      {exp.companyName || "Company"}
+                      {exp.jobLocation && (
+                        <span className="text-base font-medium text-normal">
+                          {" • "} {exp.jobLocation}
+                        </span>
+                      )}
+                    </p>
+                    {exp.jobDescription && (
+                      <p className="mt-2 text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                        <span dangerouslySetInnerHTML={{ __html: exp.jobDescription ?? "" }} />
+                      </p>
+                    )}
 
                   </div>
 

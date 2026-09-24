@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { AllData, Project, ImprintData } from "@/lib/types";
+import type { AllData, Project, ImprintData, Experience } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
@@ -11,6 +11,37 @@ import { Loader2, Plus, Trash2, X } from "lucide-react";
 type SaveSection = "home" | "about" | "contact" | "imprint" | "projects";
 
 const inputCls = "w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+
+// Strictly typed recursive cleaner
+function cleanPayload(obj: unknown): unknown {
+  if (obj === null || obj === undefined) return undefined;
+  if (typeof obj === "string") return obj === "" ? undefined : obj;
+
+  if (Array.isArray(obj)) {
+    return obj.map((item) => {
+      if (typeof item === "object" && item !== null && !Array.isArray(item)) {
+        const cleanedItem: Record<string, unknown> = {};
+        for (const key in item) {
+          const val = cleanPayload((item as Record<string, unknown>)[key]);
+          if (val !== undefined) cleanedItem[key] = val;
+        }
+        return cleanedItem;
+      }
+      return cleanPayload(item);
+    });
+  }
+
+  if (typeof obj === "object") {
+    const cleaned: Record<string, unknown> = {};
+    for (const key in obj) {
+      const val = cleanPayload((obj as Record<string, unknown>)[key]);
+      if (val !== undefined) cleaned[key] = val;
+    }
+    return cleaned;
+  }
+
+  return obj;
+}
 
 function Field({ label, value, onChange, multiline = false }: {
   label: string;
@@ -84,8 +115,7 @@ export default function DashboardPage() {
     try {
       const res = await authFetch(`${apiBaseUrl}/admin/dashboard`);
       if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
-      const text = await res.json();
-      const jsonData = text ? text : null;
+      const jsonData = await res.json();
       setData(jsonData);
     } catch {
       localStorage.removeItem("admin_jwt");
@@ -98,8 +128,7 @@ export default function DashboardPage() {
   async function refresh() {
     const res = await authFetch(`${apiBaseUrl}/admin/dashboard`);
     if (!res.ok) throw new Error(`Refresh failed: ${res.status}`);
-    const text = await res.json();
-    const jsonData = text ? JSON.parse(text) : null;
+    const jsonData = await res.json();
     setData(jsonData);
   }
 
@@ -112,11 +141,11 @@ export default function DashboardPage() {
           section === "about" ? data.about :
             section === "contact" ? data.contact :
               section === "imprint" ? data.imprint :
-                data.projects?.projects; // Send the array of projects to the backend
+                section === "projects" ? (data.projects ?? { projects: [] }) : null;
 
       const res = await authFetch(`${apiBaseUrl}/admin/update/${section}`, {
         method: "PUT",
-        body: JSON.stringify(body),
+        body: JSON.stringify(cleanPayload(body)),
       });
       if (!res.ok) throw new Error(`Save failed: ${res.status}`);
       toast.add({ title: `${section.charAt(0).toUpperCase() + section.slice(1)} data saved` });
@@ -129,15 +158,18 @@ export default function DashboardPage() {
 
   async function addProject() {
     try {
+      const payload = cleanPayload({
+        title: newProject.title,
+        description: newProject.description,
+        imageUrl: newProject.imageUrl,
+        projectUrl: newProject.projectUrl,
+        technologies: newProject.technologies.split(";").map((s) => s.trim()),
+      });
+
       const res = await authFetch(`${apiBaseUrl}/admin/projects`, {
         method: "POST",
-        body: JSON.stringify({
-          title: newProject.title,
-          description: newProject.description,
-          imageUrl: newProject.imageUrl,
-          projectUrl: newProject.projectUrl,
-          technologies: newProject.technologies.split(",").map((s) => s.trim()).filter(Boolean),
-        }),
+        // CLEANED: Strips all empty strings before sending to backend
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(`Create failed: ${res.status}`);
       const created: Project = await res.json();
@@ -187,7 +219,6 @@ export default function DashboardPage() {
   function patchImprint(patch: Partial<ImprintData>) {
     setData((d) => {
       if (!d) return d;
-      // Ensure all required string fields exist to satisfy the strict ImprintData interface
       const current: ImprintData = d.imprint ?? { name: "", email: "", phone: "", address: "" };
       return { ...d, imprint: { ...current, ...patch } as ImprintData };
     });
@@ -205,16 +236,42 @@ export default function DashboardPage() {
     });
   }
 
+  function patchExperience(index: number, patch: Partial<Experience>) {
+    setData((d) => {
+      if (!d || !d.about) return d;
+      const exps = [...(d.about.jobExperiences ?? [])];
+      exps[index] = { ...exps[index], ...patch };
+      return { ...d, about: { ...d.about, jobExperiences: exps } };
+    });
+  }
+
+  function addExperience() {
+    setData((d) => {
+      if (!d) return d;
+      const currentAbout = d.about ?? {};
+      const exps = [...(currentAbout.jobExperiences ?? [])];
+      exps.push({});
+
+      return { ...d, about: { ...currentAbout, jobExperiences: exps } };
+    });
+  }
+
+  function deleteExperience(index: number) {
+    setData((d) => {
+      if (!d || !d.about) return d;
+      const exps = [...(d.about.jobExperiences ?? [])];
+      exps.splice(index, 1);
+      return { ...d, about: { ...d.about, jobExperiences: exps } };
+    });
+  }
+
   useEffect(() => {
     void Promise.resolve().then(() => loadDashboard());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (isLoading) {
-    return (
-      <>
-      </>
-    );
+    return <></>;
   }
 
   if (!data) return <></>;
@@ -231,7 +288,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <Field label="User" value={data.user?.user ?? ""} onChange={(v) => patchHome({ user: v })} />
-            <Field label="Blurp" multiline value={data.user?.blurp ?? ""} onChange={(v) => patchHome({ blurp: v })} />
+            <Field label="Blurp (use <br> for line breaks)" multiline value={data.user?.blurp ?? ""} onChange={(v) => patchHome({ blurp: v })} />
             <Field label="Avatar URL" value={data.user?.avatar ?? ""} onChange={(v) => patchHome({ avatar: v })} />
           </CardContent>
         </Card>
@@ -270,7 +327,7 @@ export default function DashboardPage() {
             <CardTitle className="text-lg">About Data</CardTitle>
             <SaveButton saving={saving} section="about" onClick={() => save("about")} />
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 max-h-[70vh] overflow-y-auto pr-2">
             <Field label="Full Name" value={data.about?.fullName ?? ""} onChange={(v) => patchAbout({ fullName: v })} />
             <label className="block text-left space-y-1">
               <span className="text-xs font-medium text-muted-foreground">Age</span>
@@ -282,7 +339,54 @@ export default function DashboardPage() {
               />
             </label>
             <Field label="Pronouns" value={data.about?.pronouns ?? ""} onChange={(v) => patchAbout({ pronouns: v })} />
-            <Field label="Bio" multiline value={data.about?.bio ?? ""} onChange={(v) => patchAbout({ bio: v })} />
+            <Field label="Bio (use <br> for line breaks)" multiline value={data.about?.bio ?? ""} onChange={(v) => patchAbout({ bio: v })} />
+
+            <div className="pt-4 border-t border-border space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-foreground">Job Experiences</span>
+                <Button size="sm" variant="outline" onClick={addExperience}>
+                  <Plus className="h-4 w-4 mr-1" /> Add
+                </Button>
+              </div>
+
+              {(data.about?.jobExperiences ?? []).map((exp, idx) => (
+                <div key={idx} className="p-3 border border-border rounded-md bg-background/20 space-y-3 relative">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="absolute top-2 right-2 h-6 w-6 text-destructive hover:text-destructive"
+                    onClick={() => deleteExperience(idx)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pr-6">
+                    <Field label="Job Title" value={exp.jobTitle} onChange={(v) => patchExperience(idx, { jobTitle: v })} />
+                    <Field label="Company Name" value={exp.companyName} onChange={(v) => patchExperience(idx, { companyName: v })} />
+                    <Field label="Location" value={exp.jobLocation} onChange={(v) => patchExperience(idx, { jobLocation: v })} />
+                    <div></div>
+                    <label className="block text-left space-y-1">
+                      <span className="text-xs font-medium text-muted-foreground">Start Date</span>
+                      <input
+                        type="date"
+                        className={inputCls}
+                        value={exp.startDate ? exp.startDate.split('T')[0] : ""}
+                        onChange={(e) => patchExperience(idx, { startDate: e.target.value ? `${e.target.value}T00:00:00Z` : undefined })}
+                      />
+                    </label>
+                    <label className="block text-left space-y-1">
+                      <span className="text-xs font-medium text-muted-foreground">End Date</span>
+                      <input
+                        type="date"
+                        className={inputCls}
+                        value={exp.endDate ? exp.endDate.split('T')[0] : ""}
+                        onChange={(e) => patchExperience(idx, { endDate: e.target.value ? `${e.target.value}T00:00:00Z` : undefined })}
+                      />
+                    </label>
+                  </div>
+                  <Field label="Description (use <br> for line breaks)" multiline value={exp.jobDescription} onChange={(v) => patchExperience(idx, { jobDescription: v })} />
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
@@ -296,7 +400,7 @@ export default function DashboardPage() {
               <SaveButton saving={saving} section="projects" onClick={() => save("projects")} />
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
             {(data.projects?.projects ?? []).map((p) => (
               <div key={p.id} className="rounded-md border border-border bg-background/40 p-4 space-y-3">
                 <div className="flex items-center justify-between">
@@ -306,15 +410,15 @@ export default function DashboardPage() {
                   </Button>
                 </div>
                 <Field label="Title" value={p.title ?? ""} onChange={(v) => patchProject(p.id, { title: v })} />
-                <Field label="Description" multiline value={p.description ?? ""} onChange={(v) => patchProject(p.id, { description: v })} />
+                <Field label="Description (use <br> for line breaks)" multiline value={p.description ?? ""} onChange={(v) => patchProject(p.id, { description: v })} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field label="Image URL" value={p.imageUrl ?? ""} onChange={(v) => patchProject(p.id, { imageUrl: v })} />
                   <Field label="Project URL" value={p.projectUrl ?? ""} onChange={(v) => patchProject(p.id, { projectUrl: v })} />
                 </div>
                 <Field
-                  label="Technologies (comma separated)"
-                  value={(p.technologies ?? []).join(", ")}
-                  onChange={(v) => patchProject(p.id, { technologies: v.split(",").map((s) => s.trim()).filter(Boolean) })}
+                  label="Technologies (separated by ;)"
+                  value={(p.technologies ?? []).join(";")}
+                  onChange={(v) => patchProject(p.id, { technologies: v.split(";").map((s) => s.trim()) })}
                 />
               </div>
             ))}
@@ -335,7 +439,7 @@ export default function DashboardPage() {
             <Field label="Description" multiline value={newProject.description} onChange={(v) => setNewProject((n) => ({ ...n, description: v }))} />
             <Field label="Image URL" value={newProject.imageUrl} onChange={(v) => setNewProject((n) => ({ ...n, imageUrl: v }))} />
             <Field label="Project URL" value={newProject.projectUrl} onChange={(v) => setNewProject((n) => ({ ...n, projectUrl: v }))} />
-            <Field label="Technologies (comma separated)" value={newProject.technologies} onChange={(v) => setNewProject((n) => ({ ...n, technologies: v }))} />
+            <Field label="Technologies (separated by ;)" value={newProject.technologies} onChange={(v) => setNewProject((n) => ({ ...n, technologies: v }))} />
             <Button className="w-full" onClick={addProject}>
               <Plus className="h-4 w-4 mr-1" /> Create Project
             </Button>

@@ -1,16 +1,16 @@
-import type { Metadata } from "next";
-import localFont from "next/font/local";
-import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/toast";
-import { Header } from "@/components/header";
-import { Footer } from "@/components/footer";
+import type { Metadata } from "next"
+import localFont from "next/font/local"
+import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/toast"
+import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
 import { BackgroundAnimation } from "@/components/background-anim"
 
-import "./globals.css";
+import "./globals.css"
 
 const Inter = localFont({
-  src: './fonts/Inter.woff2',
-});
+  src: "./fonts/Inter.woff2",
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://lucy-codes.de"),
@@ -42,7 +42,11 @@ export const metadata: Metadata = {
       { url: "/icons/favicon-16x16.png", type: "image/png", sizes: "16x16" },
       { url: "/icons/favicon-32x32.png", type: "image/png", sizes: "32x32" },
       { url: "/icons/favicon-96x96.png", type: "image/png", sizes: "96x96" },
-      { url: "/icons/favicon-192x192.png", type: "image/png", sizes: "192x192" },
+      {
+        url: "/icons/favicon-192x192.png",
+        type: "image/png",
+        sizes: "192x192",
+      },
       { url: "/favicon.ico", type: "image/x-icon" },
     ],
     shortcut: ["/favicon.ico"],
@@ -58,42 +62,41 @@ export const metadata: Metadata = {
       { url: "/icons/favicon-180x180.png", sizes: "180x180" },
     ],
   },
-};
+}
 
 export default function RootLayout({
-                                     children,
-                                   }: Readonly<{
-  children: React.ReactNode;
+  children,
+}: Readonly<{
+  children: React.ReactNode
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-    <body className={`${Inter.className} antialiased`}>
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="dark"
-      enableSystem
-      disableTransitionOnChange
-    >
-      <div className="flex flex-col min-h-screen bg-background">
-        <Header />
+      <body className={`${Inter.className} antialiased`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <div className="flex min-h-screen flex-col bg-background">
+            <Header />
 
-        <Toaster />
-        <main className="flex-1 w-full flex flex-col relative">
+            <Toaster />
+            <main className="relative flex w-full flex-1 flex-col">
+              <div className="z-10 flex w-full flex-1 flex-col">
+                <div className="mx-auto my-auto w-full max-w-5xl px-4 py-8">
+                  {children}
+                </div>
+              </div>
+              <BackgroundAnimation />
+            </main>
 
-          <div className="flex-1 w-full flex flex-col z-10">
-            <div className="w-full max-w-5xl px-4 py-8 my-auto mx-auto">
-              {children}
-            </div>
+            <BackgroundAnimation />
+
+            <Footer />
           </div>
-          <BackgroundAnimation />
-        </main>
-
-        <BackgroundAnimation/>
-
-        <Footer />
-      </div>
-    </ThemeProvider>
-    </body>
+        </ThemeProvider>
+      </body>
     </html>
-  );
+  )
 }

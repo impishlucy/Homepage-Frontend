@@ -59,10 +59,10 @@ export default function ImprintPage(): JSX.Element {
                   <span dangerouslySetInnerHTML={{ __html: data?.address ?? "" }} />
                 </p>
 
-
-                <p>
+                {data?.phone ? <p>
                   <span className="font-medium">Phone:</span> {data?.phone ?? ""}
-                </p>
+                </p> : <></>}
+
                 <p>
                   <span className="font-medium">Email:</span> {data?.email ?? ""}
                 </p>
