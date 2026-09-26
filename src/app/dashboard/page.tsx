@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/toast"
 import { useRouter } from "next/navigation"
-import { Loader2, Plus, Trash2, X } from "lucide-react"
+import { GripVertical, Loader2, Plus, Trash2, X } from "lucide-react"
 
 type SaveSection = "home" | "about" | "contact" | "imprint" | "projects"
 
@@ -101,6 +101,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [saving, setSaving] = useState<SaveSection | null>(null)
   const [showNewProject, setShowNewProject] = useState(false)
+  const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null)
   const [newProject, setNewProject] = useState({
     title: "",
     description: "",
@@ -285,6 +286,31 @@ export default function DashboardPage() {
           projects: d.projects.projects.map((p) =>
             p.id === id ? { ...p, ...patch } : p
           ),
+        },
+      }
+    })
+  }
+
+  function reorderProjects(fromId: string, toId: string) {
+    if (fromId === toId) return
+
+    setData((d) => {
+      if (!d?.projects) return d
+
+      const projects = [...d.projects.projects]
+      const fromIndex = projects.findIndex((project) => project.id === fromId)
+      const toIndex = projects.findIndex((project) => project.id === toId)
+
+      if (fromIndex === -1 || toIndex === -1) return d
+
+      const [movedProject] = projects.splice(fromIndex, 1)
+      projects.splice(toIndex, 0, movedProject)
+
+      return {
+        ...d,
+        projects: {
+          ...d.projects,
+          projects,
         },
       }
     })
@@ -596,12 +622,33 @@ export default function DashboardPage() {
             {(data.projects?.projects ?? []).map((p) => (
               <div
                 key={p.id}
-                className="space-y-3 rounded-md border border-border bg-background/40 p-4"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => {
+                  if (!draggedProjectId) return
+                  reorderProjects(draggedProjectId, p.id)
+                  setDraggedProjectId(null)
+                }}
+                className={`space-y-3 rounded-md border border-border bg-background/40 p-4 transition-opacity ${
+                  draggedProjectId === p.id ? "opacity-50" : ""
+                }`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-xs text-muted-foreground">
-                    #{p.id}
-                  </span>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <button
+                      type="button"
+                      draggable
+                      aria-label={`Drag project ${p.title ?? p.id}`}
+                      title="Drag to reorder"
+                      onDragStart={() => setDraggedProjectId(p.id)}
+                      onDragEnd={() => setDraggedProjectId(null)}
+                      className="cursor-grab rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      <GripVertical className="h-4 w-4" />
+                    </button>
+                    <span className="truncate font-mono text-xs text-muted-foreground">
+                      #{p.id}
+                    </span>
+                  </div>
                   <Button
                     size="sm"
                     variant="destructive"
