@@ -246,7 +246,7 @@ export default function ProjectPage() {
                     </div>
 
                     {imageUrl && (
-                      <div className="relative aspect-square w-[28vw] max-w-28 min-w-20 shrink-0 overflow-hidden rounded-md border bg-muted sm:max-w-32">
+                      <div className="relative aspect-square w-[28vw] max-w-28 min-w-20 shrink-0 overflow-hidden rounded-md border bg-transparent sm:max-w-32">
                         <Image
                           src={imageUrl}
                           alt={title}
