@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation"
 import { Menu, X } from "lucide-react"
 import { useState } from "react"
 
-// Add { name: "Game", href: "/game" }, once you have a game to show off.
 const navItems = [
   { name: "Home", href: "/" },
   { name: "About", href: "/about" },
