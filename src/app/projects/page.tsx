@@ -230,29 +230,33 @@ export default function ProjectPage() {
                     />
                   </p>
 
-                  {imageUrl && (
-                    <div className="relative aspect-video w-full overflow-hidden rounded-md border bg-muted">
-                      <Image
-                        src={imageUrl}
-                        alt={title}
-                        fill
-                        className="object-cover transition-transform duration-300 hover:scale-105"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      />
+                  <div className="flex flex-row items-end justify-between gap-4">
+                    <div>
+                      {projectUrl && (
+                        <Link
+                          href={projectUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
+                        >
+                          <span>View Project</span>
+                          <Globe className="h-5 w-5 pl-1" />
+                        </Link>
+                      )}
                     </div>
-                  )}
 
-                  {projectUrl && (
-                    <Link
-                      href={projectUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 sm:w-auto"
-                    >
-                      <span>View Project</span>
-                      <Globe className="h-5 w-5 pl-1" />
-                    </Link>
-                  )}
+                    {imageUrl && (
+                      <div className="relative aspect-square w-[28vw] max-w-28 min-w-20 shrink-0 overflow-hidden rounded-md border bg-muted sm:max-w-32">
+                        <Image
+                          src={imageUrl}
+                          alt={title}
+                          fill
+                          className="object-cover transition-transform duration-300 hover:scale-105"
+                          sizes="(max-width: 640px) 28vw, 8rem"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             )
