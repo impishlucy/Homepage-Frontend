@@ -193,7 +193,6 @@ export default function ProjectPage() {
 
         {data?.projects
           ?.slice()
-          .reverse()
           .map((project, index) => {
             const title = project.title ?? "Untitled Project"
             const imageUrl = project.imageUrl ?? ""

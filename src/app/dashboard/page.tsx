@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import type { AllData, Project, ImprintData, Experience } from "@/lib/types"
+import { useEffect, useRef, useState } from "react"
+import type { AllData, Experience, ImprintData, Project } from "@/lib/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/toast"
@@ -13,7 +13,6 @@ type SaveSection = "home" | "about" | "contact" | "imprint" | "projects"
 const inputCls =
   "w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 
-// Strictly typed recursive cleaner
 function cleanPayload(obj: unknown): unknown {
   if (obj === null || obj === undefined) return undefined
   if (typeof obj === "string") return obj === "" ? undefined : obj
@@ -28,6 +27,7 @@ function cleanPayload(obj: unknown): unknown {
         }
         return cleanedItem
       }
+
       return cleanPayload(item)
     })
   }
@@ -38,18 +38,26 @@ function cleanPayload(obj: unknown): unknown {
       const val = cleanPayload((obj as Record<string, unknown>)[key])
       if (val !== undefined) cleaned[key] = val
     }
+
     return cleaned
   }
 
   return obj
 }
 
+function normalizeProjectIds(projects: Project[]): Project[] {
+  return projects.map((project, index) => ({
+    ...project,
+    id: String(index + 1),
+  }))
+}
+
 function Field({
-  label,
-  value,
-  onChange,
-  multiline = false,
-}: {
+                 label,
+                 value,
+                 onChange,
+                 multiline = false,
+               }: {
   label: string
   value: string | number | undefined
   onChange: (v: string) => void
@@ -76,10 +84,10 @@ function Field({
 }
 
 function SaveButton({
-  saving,
-  section,
-  onClick,
-}: {
+                      saving,
+                      section,
+                      onClick,
+                    }: {
   saving: SaveSection | null
   section: SaveSection
   onClick: () => void
@@ -97,11 +105,13 @@ function SaveButton({
 
 export default function DashboardPage() {
   const router = useRouter()
+  const draggedProjectIdRef = useRef<string | null>(null)
   const [data, setData] = useState<AllData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [saving, setSaving] = useState<SaveSection | null>(null)
   const [showNewProject, setShowNewProject] = useState(false)
   const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null)
+  const [dragOverProjectId, setDragOverProjectId] = useState<string | null>(null)
   const [newProject, setNewProject] = useState({
     title: "",
     description: "",
@@ -132,6 +142,7 @@ export default function DashboardPage() {
       router.replace("/login")
       throw new Error("Unauthorized")
     }
+
     return res
   }
 
@@ -141,11 +152,19 @@ export default function DashboardPage() {
       router.replace("/login")
       return
     }
+
     try {
       const res = await authFetch(`${apiBaseUrl}/admin/dashboard`)
       if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`)
-      const jsonData = await res.json()
-      setData(jsonData)
+      const jsonData: AllData = await res.json()
+
+      setData({
+        ...jsonData,
+        projects: {
+          ...(jsonData.projects ?? { projects: [] }),
+          projects: normalizeProjectIds(jsonData.projects?.projects ?? []),
+        },
+      })
     } catch {
       localStorage.removeItem("admin_jwt")
       router.replace("/login")
@@ -157,14 +176,25 @@ export default function DashboardPage() {
   async function refresh() {
     const res = await authFetch(`${apiBaseUrl}/admin/dashboard`)
     if (!res.ok) throw new Error(`Refresh failed: ${res.status}`)
-    const jsonData = await res.json()
-    setData(jsonData)
+    const jsonData: AllData = await res.json()
+
+    setData({
+      ...jsonData,
+      projects: {
+        ...(jsonData.projects ?? { projects: [] }),
+        projects: normalizeProjectIds(jsonData.projects?.projects ?? []),
+      },
+    })
   }
 
   async function save(section: SaveSection) {
     if (!data) return
+
     setSaving(section)
+
     try {
+      const currentProjects = normalizeProjectIds(data.projects?.projects ?? [])
+
       const body =
         section === "home"
           ? data.user
@@ -175,14 +205,33 @@ export default function DashboardPage() {
               : section === "imprint"
                 ? data.imprint
                 : section === "projects"
-                  ? (data.projects ?? { projects: [] })
+                  ? {
+                    ...(data.projects ?? { projects: [] }),
+                    projects: currentProjects,
+                  }
                   : null
 
       const res = await authFetch(`${apiBaseUrl}/admin/update/${section}`, {
         method: "PUT",
         body: JSON.stringify(cleanPayload(body)),
       })
+
       if (!res.ok) throw new Error(`Save failed: ${res.status}`)
+
+      if (section === "projects") {
+        setData((d) =>
+          d
+            ? {
+              ...d,
+              projects: {
+                ...(d.projects ?? { projects: [] }),
+                projects: currentProjects,
+              },
+            }
+            : d
+        )
+      }
+
       toast.add({
         title: `${section.charAt(0).toUpperCase() + section.slice(1)} data saved`,
       })
@@ -193,47 +242,43 @@ export default function DashboardPage() {
     }
   }
 
-  async function addProject() {
-    try {
-      const payload = cleanPayload({
-        title: newProject.title,
-        description: newProject.description,
-        imageUrl: newProject.imageUrl,
-        projectUrl: newProject.projectUrl,
-        technologies: newProject.technologies.split(";").map((s) => s.trim()),
-      })
-
-      const res = await authFetch(`${apiBaseUrl}/admin/projects`, {
-        method: "POST",
-        // CLEANED: Strips all empty strings before sending to backend
-        body: JSON.stringify(payload),
-      })
-      if (!res.ok) throw new Error(`Create failed: ${res.status}`)
-      const created: Project = await res.json()
-
-      setData((d) => {
-        if (!d) return d
-        const currentProjects = d.projects?.projects ?? []
-        return {
-          ...d,
-          projects: {
-            projects: [created, ...currentProjects],
-          },
-        }
-      })
-
-      setNewProject({
-        title: "",
-        description: "",
-        imageUrl: "",
-        projectUrl: "",
-        technologies: "",
-      })
-      setShowNewProject(false)
-      toast.add({ title: "Project created" })
-    } catch {
-      toast.add({ title: "Failed to create project" })
+  function addProject() {
+    const created: Project = {
+      id: "0",
+      title: newProject.title,
+      description: newProject.description,
+      imageUrl: newProject.imageUrl,
+      projectUrl: newProject.projectUrl,
+      technologies: newProject.technologies
+        .split(";")
+        .map((s) => s.trim())
+        .filter(Boolean),
     }
+
+    setData((d) => {
+      if (!d) return d
+
+      const currentProjects = d.projects?.projects ?? []
+      const projects = normalizeProjectIds([created, ...currentProjects])
+
+      return {
+        ...d,
+        projects: {
+          ...(d.projects ?? { projects: [] }),
+          projects,
+        },
+      }
+    })
+
+    setNewProject({
+      title: "",
+      description: "",
+      imageUrl: "",
+      projectUrl: "",
+      technologies: "",
+    })
+    setShowNewProject(false)
+    toast.add({ title: "Project added locally" })
   }
 
   async function deleteProject(id: string) {
@@ -242,7 +287,9 @@ export default function DashboardPage() {
         `${apiBaseUrl}/admin/projects/${encodeURIComponent(id)}`,
         { method: "DELETE" }
       )
+
       if (!res.ok) throw new Error(`Delete failed: ${res.status}`)
+
       await refresh()
       toast.add({ title: "Project deleted" })
     } catch {
@@ -267,24 +314,34 @@ export default function DashboardPage() {
   function patchImprint(patch: Partial<ImprintData>) {
     setData((d) => {
       if (!d) return d
+
       const current: ImprintData = d.imprint ?? {
         name: "",
         email: "",
         phone: "",
         address: "",
       }
-      return { ...d, imprint: { ...current, ...patch } as ImprintData }
+
+      return {
+        ...d,
+        imprint: {
+          ...current,
+          ...patch,
+        },
+      }
     })
   }
 
   function patchProject(id: string, patch: Partial<Project>) {
     setData((d) => {
-      if (!d || !d.projects) return d
+      if (!d?.projects) return d
+
       return {
         ...d,
         projects: {
+          ...d.projects,
           projects: d.projects.projects.map((p) =>
-            p.id === id ? { ...p, ...patch } : p
+            p.id === id ? { ...p, ...patch, id } : p
           ),
         },
       }
@@ -304,44 +361,81 @@ export default function DashboardPage() {
       if (fromIndex === -1 || toIndex === -1) return d
 
       const [movedProject] = projects.splice(fromIndex, 1)
+      if (!movedProject) return d
+
       projects.splice(toIndex, 0, movedProject)
 
       return {
         ...d,
         projects: {
           ...d.projects,
-          projects,
+          projects: normalizeProjectIds(projects),
         },
       }
     })
   }
 
+  function startProjectDrag(projectId: string) {
+    draggedProjectIdRef.current = projectId
+    setDraggedProjectId(projectId)
+    setDragOverProjectId(null)
+  }
+
+  function finishProjectDrag() {
+    draggedProjectIdRef.current = null
+    setDraggedProjectId(null)
+    setDragOverProjectId(null)
+  }
+
   function patchExperience(index: number, patch: Partial<Experience>) {
     setData((d) => {
-      if (!d || !d.about) return d
+      if (!d?.about) return d
+
       const exps = [...(d.about.jobExperiences ?? [])]
       exps[index] = { ...exps[index], ...patch }
-      return { ...d, about: { ...d.about, jobExperiences: exps } }
+
+      return {
+        ...d,
+        about: {
+          ...d.about,
+          jobExperiences: exps,
+        },
+      }
     })
   }
 
   function addExperience() {
     setData((d) => {
       if (!d) return d
+
       const currentAbout = d.about ?? {}
       const exps = [...(currentAbout.jobExperiences ?? [])]
       exps.push({})
 
-      return { ...d, about: { ...currentAbout, jobExperiences: exps } }
+      return {
+        ...d,
+        about: {
+          ...currentAbout,
+          jobExperiences: exps,
+        },
+      }
     })
   }
 
   function deleteExperience(index: number) {
     setData((d) => {
-      if (!d || !d.about) return d
+      if (!d?.about) return d
+
       const exps = [...(d.about.jobExperiences ?? [])]
       exps.splice(index, 1)
-      return { ...d, about: { ...d.about, jobExperiences: exps } }
+
+      return {
+        ...d,
+        about: {
+          ...d.about,
+          jobExperiences: exps,
+        },
+      }
     })
   }
 
@@ -481,6 +575,7 @@ export default function DashboardPage() {
               value={data.about?.fullName ?? ""}
               onChange={(v) => patchAbout({ fullName: v })}
             />
+
             <label className="block space-y-1 text-left">
               <span className="text-xs font-medium text-muted-foreground">
                 Age
@@ -499,6 +594,7 @@ export default function DashboardPage() {
                 }
               />
             </label>
+
             <Field
               label="Pronouns"
               value={data.about?.pronouns ?? ""}
@@ -534,6 +630,7 @@ export default function DashboardPage() {
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
+
                   <div className="grid grid-cols-1 gap-3 pr-6 sm:grid-cols-2">
                     <Field
                       label="Job Title"
@@ -550,7 +647,9 @@ export default function DashboardPage() {
                       value={exp.jobLocation}
                       onChange={(v) => patchExperience(idx, { jobLocation: v })}
                     />
+
                     <div></div>
+
                     <label className="block space-y-1 text-left">
                       <span className="text-xs font-medium text-muted-foreground">
                         Start Date
@@ -568,6 +667,7 @@ export default function DashboardPage() {
                         }
                       />
                     </label>
+
                     <label className="block space-y-1 text-left">
                       <span className="text-xs font-medium text-muted-foreground">
                         End Date
@@ -586,6 +686,7 @@ export default function DashboardPage() {
                       />
                     </label>
                   </div>
+
                   <Field
                     label="Description (use <br> for line breaks)"
                     multiline
@@ -603,6 +704,7 @@ export default function DashboardPage() {
         <Card className="bg-card/50 lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle className="text-lg">Projects</CardTitle>
+
             <div className="flex gap-2">
               <Button
                 size="sm"
@@ -618,19 +720,39 @@ export default function DashboardPage() {
               />
             </div>
           </CardHeader>
+
           <CardContent className="max-h-[70vh] space-y-4 overflow-y-auto pr-2">
             {(data.projects?.projects ?? []).map((p) => (
               <div
                 key={p.id}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={() => {
-                  if (!draggedProjectId) return
-                  reorderProjects(draggedProjectId, p.id)
-                  setDraggedProjectId(null)
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  e.dataTransfer.dropEffect = "move"
+                  setDragOverProjectId(p.id)
                 }}
-                className={`space-y-3 rounded-md border border-border bg-background/40 p-4 transition-opacity ${
-                  draggedProjectId === p.id ? "opacity-50" : ""
-                }`}
+                onDragLeave={() => {
+                  setDragOverProjectId((current) =>
+                    current === p.id ? null : current
+                  )
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+
+                  const fromId =
+                    e.dataTransfer.getData("text/project-id") ||
+                    draggedProjectIdRef.current
+
+                  if (fromId) {
+                    reorderProjects(fromId, p.id)
+                  }
+
+                  finishProjectDrag()
+                }}
+                className={`space-y-3 rounded-md border bg-background/40 p-4 transition-colors ${
+                  dragOverProjectId === p.id && draggedProjectId !== p.id
+                    ? "border-primary"
+                    : "border-border"
+                } ${draggedProjectId === p.id ? "opacity-50" : ""}`}
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
@@ -639,16 +761,23 @@ export default function DashboardPage() {
                       draggable
                       aria-label={`Drag project ${p.title ?? p.id}`}
                       title="Drag to reorder"
-                      onDragStart={() => setDraggedProjectId(p.id)}
-                      onDragEnd={() => setDraggedProjectId(null)}
-                      className="cursor-grab rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      onDragStart={(e) => {
+                        e.dataTransfer.effectAllowed = "move"
+                        e.dataTransfer.setData("text/project-id", p.id)
+                        e.dataTransfer.setData("text/plain", p.id)
+                        startProjectDrag(p.id)
+                      }}
+                      onDragEnd={finishProjectDrag}
+                      className="cursor-grab rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground active:cursor-grabbing"
                     >
                       <GripVertical className="h-4 w-4" />
                     </button>
+
                     <span className="truncate font-mono text-xs text-muted-foreground">
                       #{p.id}
                     </span>
                   </div>
+
                   <Button
                     size="sm"
                     variant="destructive"
@@ -657,17 +786,20 @@ export default function DashboardPage() {
                     <Trash2 className="mr-1 h-4 w-4" /> Delete
                   </Button>
                 </div>
+
                 <Field
                   label="Title"
                   value={p.title ?? ""}
                   onChange={(v) => patchProject(p.id, { title: v })}
                 />
+
                 <Field
                   label="Description (use <br> for line breaks)"
                   multiline
                   value={p.description ?? ""}
                   onChange={(v) => patchProject(p.id, { description: v })}
                 />
+
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Field
                     label="Image URL"
@@ -680,12 +812,16 @@ export default function DashboardPage() {
                     onChange={(v) => patchProject(p.id, { projectUrl: v })}
                   />
                 </div>
+
                 <Field
                   label="Technologies (separated by ;)"
                   value={(p.technologies ?? []).join(";")}
                   onChange={(v) =>
                     patchProject(p.id, {
-                      technologies: v.split(";").map((s) => s.trim()),
+                      technologies: v
+                        .split(";")
+                        .map((s) => s.trim())
+                        .filter(Boolean),
                     })
                   }
                 />
@@ -710,27 +846,34 @@ export default function DashboardPage() {
                 <X className="h-4 w-4" />
               </Button>
             </div>
+
             <Field
               label="Title"
               value={newProject.title}
               onChange={(v) => setNewProject((n) => ({ ...n, title: v }))}
             />
+
             <Field
               label="Description"
               multiline
               value={newProject.description}
-              onChange={(v) => setNewProject((n) => ({ ...n, description: v }))}
+              onChange={(v) =>
+                setNewProject((n) => ({ ...n, description: v }))
+              }
             />
+
             <Field
               label="Image URL"
               value={newProject.imageUrl}
               onChange={(v) => setNewProject((n) => ({ ...n, imageUrl: v }))}
             />
+
             <Field
               label="Project URL"
               value={newProject.projectUrl}
               onChange={(v) => setNewProject((n) => ({ ...n, projectUrl: v }))}
             />
+
             <Field
               label="Technologies (separated by ;)"
               value={newProject.technologies}
@@ -738,8 +881,9 @@ export default function DashboardPage() {
                 setNewProject((n) => ({ ...n, technologies: v }))
               }
             />
+
             <Button className="w-full" onClick={addProject}>
-              <Plus className="mr-1 h-4 w-4" /> Create Project
+              <Plus className="mr-1 h-4 w-4" /> Add Project Locally
             </Button>
           </div>
         </div>
