@@ -245,13 +245,18 @@ export default function ProjectPage() {
                     </div>
 
                     {imageUrl && (
-                      <div className="relative aspect-square w-[28vw] max-w-28 min-w-20 shrink-0 overflow-hidden bg-transparent sm:max-w-32">
+                      <div className="shrink-0 overflow-hidden rounded-2xl bg-transparent">
                         <Image
                           src={imageUrl}
                           alt={title}
-                          fill
-                          className="object-cover transition-transform duration-300 hover:scale-105"
-                          sizes="(max-width: 640px) 28vw, 8rem"
+                          width={1}
+                          height={1}
+                          sizes="(max-width: 768px) 50vw, 24rem"
+                          className="h-auto max-h-[min(8.4rem,21vh)] w-auto max-w-[min(24rem,50vw)] rounded-2xl object-contain transition-transform duration-300 hover:scale-105"
+                          style={{
+                            width: "auto",
+                            height: "auto",
+                          }}
                         />
                       </div>
                     )}
