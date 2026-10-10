@@ -301,6 +301,25 @@ export default function DashboardPage() {
     setData((d) => (d ? { ...d, user: { ...(d.user ?? {}), ...patch } } : d))
   }
 
+  function patchHomeLinks(
+    patch: Partial<NonNullable<NonNullable<AllData["user"]>["links"]>>
+  ) {
+    setData((d) =>
+      d
+        ? {
+            ...d,
+            user: {
+              ...(d.user ?? {}),
+              links: {
+                ...(d.user?.links ?? {}),
+                ...patch,
+              },
+            },
+          }
+        : d
+    )
+  }
+
   function patchAbout(patch: Partial<NonNullable<AllData["about"]>>) {
     setData((d) => (d ? { ...d, about: { ...(d.about ?? {}), ...patch } } : d))
   }
@@ -482,6 +501,31 @@ export default function DashboardPage() {
               label="Avatar URL"
               value={data.user?.avatar ?? ""}
               onChange={(v) => patchHome({ avatar: v })}
+            />
+            <Field
+              label="Github URL"
+              value={data.user?.links?.github ?? ""}
+              onChange={(v) => patchHomeLinks({ github: v })}
+            />
+            <Field
+              label="Youtube URL"
+              value={data.user?.links?.youTube ?? ""}
+              onChange={(v) => patchHomeLinks({ youTube: v })}
+            />
+            <Field
+              label="Bluesky URL"
+              value={data.user?.links?.bluesky ?? ""}
+              onChange={(v) => patchHomeLinks({ bluesky: v })}
+            />
+            <Field
+              label="Tiktok URL"
+              value={data.user?.links?.tiktok ?? ""}
+              onChange={(v) => patchHomeLinks({ tiktok: v })}
+            />
+            <Field
+              label="Instagram URL"
+              value={data.user?.links?.instagram ?? ""}
+              onChange={(v) => patchHomeLinks({ instagram: v })}
             />
           </CardContent>
         </Card>
@@ -857,9 +901,7 @@ export default function DashboardPage() {
               label="Description"
               multiline
               value={newProject.description}
-              onChange={(v) =>
-                setNewProject((n) => ({ ...n, description: v }))
-              }
+              onChange={(v) => setNewProject((n) => ({ ...n, description: v }))}
             />
 
             <Field

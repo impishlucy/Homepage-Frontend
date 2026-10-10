@@ -11,12 +11,6 @@ export interface ProjectData {
   projects: Project[]
 }
 
-export interface HomeData {
-  user?: string
-  blurp?: string
-  avatar?: string
-}
-
 export interface Experience {
   jobTitle?: string
   companyName?: string
@@ -47,6 +41,21 @@ export interface ImprintData {
   email: string
   phone: string
   address: string
+}
+
+export interface Links {
+  github?: string
+  youTube?: string
+  bluesky?: string
+  tiktok?: string
+  instagram?: string
+}
+
+export interface HomeData {
+  user?: string
+  blurp?: string
+  avatar?: string
+  links?: Links
 }
 
 export interface AllData {
